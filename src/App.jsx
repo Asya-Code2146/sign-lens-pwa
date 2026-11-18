@@ -3,82 +3,129 @@ import DetectionView from './components/DetectionView';
 import DictionaryView from './components/DictionaryView';
 import HistoryView from './components/HistoryView';
 import AboutView from './components/AboutView';
-import BottomNav from './components/BottomNav';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
-import { Sparkles, Activity } from 'lucide-react';
+import { 
+  Video, 
+  BookOpen, 
+  History, 
+  Info, 
+  HandMetal, 
+  Sparkles,
+  Wifi,
+  Download
+} from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('detection'); // 'detection' | 'dictionary' | 'history' | 'about'
 
+  const navItems = [
+    { id: 'detection', label: 'Kamera Deteksi', icon: Video },
+    { id: 'dictionary', label: 'Kamus Isyarat', icon: BookOpen },
+    { id: 'history', label: 'Riwayat Terjemahan', icon: History },
+    { id: 'about', label: 'Panduan & Info', icon: Info },
+  ];
+
   return (
-    <div className="min-h-screen w-full bg-[#050811] flex items-center justify-center sm:p-4 text-slate-100 font-sans">
-      {/* Background Ambience Glow for Desktop */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse-fast" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl" />
-      </div>
-
-      {/* Main Container: Mobile-First Frame (100% Screen on Mobile, Elegant Phone Mockup on Desktop) */}
-      <main className="w-full sm:max-w-md h-[100dvh] sm:h-[844px] bg-[#090d16] sm:rounded-[36px] sm:border sm:border-slate-800 sm:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden relative z-10">
-        
-        {/* Top App Header */}
-        <header className="h-12 w-full bg-[#111827]/90 backdrop-blur-md border-b border-slate-800/80 px-4 flex items-center justify-between flex-shrink-0 z-30">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-md">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h1 className="text-sm font-extrabold tracking-wide text-white flex items-center gap-1.5">
-                ISYARATKU
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-400/20 uppercase">
-                  PWA
-                </span>
-              </h1>
-            </div>
+    <div className="min-h-screen w-full bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
+      {/* Top Professional Navigation Bar (Desktop & Mobile) */}
+      <header className="h-16 w-full bg-[#111827]/95 border-b border-slate-800 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40">
+        {/* Brand Logo & Name */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-teal-500 flex items-center justify-center text-white shadow-md">
+            <HandMetal className="w-5 h-5" />
           </div>
-
-          {/* AI Status Badge */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-[10px] text-cyan-300 font-medium">
-            <Activity className="w-3 h-3 text-cyan-400 animate-pulse" />
-            <span>100% Local AI</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-base tracking-tight text-white">ISYARATKU</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                100% Client-Side AI
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 hidden sm:block">
+              Penerjemah Bahasa Isyarat Real-Time Tanpa API Key Eksternal
+            </p>
           </div>
-        </header>
-
-        {/* PWA Install Banner & Offline Notice */}
-        <PwaInstallPrompt />
-
-        {/* Active Tab Screen Content */}
-        <div className="flex-1 w-full overflow-hidden relative">
-          {activeTab === 'detection' && (
-            <DetectionView
-              onNavigateToHistory={() => setActiveTab('history')}
-              onNavigateToDictionary={() => setActiveTab('dictionary')}
-            />
-          )}
-
-          {activeTab === 'dictionary' && (
-            <DictionaryView
-              onSwitchToCamera={() => setActiveTab('detection')}
-            />
-          )}
-
-          {activeTab === 'history' && (
-            <HistoryView
-              onSwitchToCamera={() => setActiveTab('detection')}
-            />
-          )}
-
-          {activeTab === 'about' && (
-            <AboutView />
-          )}
         </div>
 
-        {/* Bottom Navigation Bar */}
-        <BottomNav
-          activeTab={activeTab}
-          onChangeTab={setActiveTab}
-        />
+        {/* Desktop Navigation Tabs */}
+        <nav className="hidden md:flex items-center gap-1 bg-[#0b0f19] p-1 rounded-xl border border-slate-800">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  isActive
+                    ? 'bg-slate-800 text-white shadow-sm border border-slate-700/60'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Status & PWA Install Notice */}
+        <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>MediaPipe 21 Landmarks</span>
+          </div>
+        </div>
+      </header>
+
+      {/* PWA Install Banner */}
+      <PwaInstallPrompt />
+
+      {/* Main App Content Area (Full Width & Responsive) */}
+      <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-6 flex flex-col overflow-hidden">
+        {activeTab === 'detection' && (
+          <DetectionView
+            onNavigateToHistory={() => setActiveTab('history')}
+            onNavigateToDictionary={() => setActiveTab('dictionary')}
+          />
+        )}
+
+        {activeTab === 'dictionary' && (
+          <DictionaryView
+            onSwitchToCamera={() => setActiveTab('detection')}
+          />
+        )}
+
+        {activeTab === 'history' && (
+          <HistoryView
+            onSwitchToCamera={() => setActiveTab('detection')}
+          />
+        )}
+
+        {activeTab === 'about' && (
+          <AboutView />
+        )}
       </main>
+
+      {/* Mobile Bottom Navigation Bar (Visible only on Mobile Screens) */}
+      <nav className="md:hidden w-full bg-[#111827]/95 backdrop-blur-xl border-t border-slate-800 px-2 py-2 flex items-center justify-around sticky bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition ${
+                isActive ? 'text-teal-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Icon className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }

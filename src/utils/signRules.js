@@ -1,32 +1,24 @@
 /**
  * ============================================================================
- * MESIN PENGENALAN GESTUR BAHASA ISYARAT (RULE-BASED PATTERN MATCHING)
+ * MESIN PENGENALAN GESTUR BAHASA ISYARAT (ACCURATE RULE-BASED PATTERN MATCHING)
  * ============================================================================
- * Menggunakan 21 Titik Landmark Tangan dari Google MediaPipe Hands:
+ * Menggunakan 21 Titik Landmark Tangan MediaPipe Hands:
  * 
  *  0: WRIST (Pergelangan tangan)
- *  1-4: THUMB (Ibu jari: CMC, MCP, IP, TIP)
- *  5-8: INDEX (Telunjuk: MCP, PIP, DIP, TIP)
- *  9-12: MIDDLE (Jari tengah: MCP, PIP, DIP, TIP)
- *  13-16: RING (Jari manis: MCP, PIP, DIP, TIP)
- *  17-20: PINKY (Kelingking: MCP, PIP, DIP, TIP)
- * 
- * 100% Client-Side AI tanpa API Key eksternal!
+ *  1-4: THUMB (1: CMC, 2: MCP, 3: IP, 4: TIP)
+ *  5-8: INDEX (5: MCP, 6: PIP, 7: DIP, 8: TIP)
+ *  9-12: MIDDLE (9: MCP, 10: PIP, 11: DIP, 12: TIP)
+ *  13-16: RING (13: MCP, 14: PIP, 15: DIP, 16: TIP)
+ *  17-20: PINKY (17: MCP, 18: PIP, 19: DIP, 20: TIP)
  */
 
-/**
- * Menghitung jarak Euclidean 2D antara dua titik landmark
- */
-export function calculateDistance(p1, p2) {
+export function dist2D(p1, p2) {
   const dx = p1.x - p2.x;
   const dy = p1.y - p2.y;
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-/**
- * Menghitung jarak Euclidean 3D (memanfaatkan sumbu z untuk kedalaman tangan)
- */
-export function calculateDistance3D(p1, p2) {
+export function dist3D(p1, p2) {
   const dx = p1.x - p2.x;
   const dy = p1.y - p2.y;
   const dz = (p1.z || 0) - (p2.z || 0);
@@ -34,37 +26,20 @@ export function calculateDistance3D(p1, p2) {
 }
 
 /**
- * Menghitung sudut (dalam derajat) antara 3 titik: p1 - pCenter - p2
+ * Menganalisis kondisi geometris tangan secara presisi
+ * Menggunakan normalisasi skala terhadap ukuran telapak tangan (Wrist ke Middle MCP)
  */
-export function calculateAngle(p1, pCenter, p2) {
-  const v1 = { x: p1.x - pCenter.x, y: p1.y - pCenter.y };
-  const v2 = { x: p2.x - pCenter.x, y: p2.y - pCenter.y };
-  
-  const dot = v1.x * v2.x + v1.y * v2.y;
-  const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
-  const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
-  
-  if (mag1 === 0 || mag2 === 0) return 0;
-  
-  let cosTheta = dot / (mag1 * mag2);
-  cosTheta = Math.max(-1, Math.min(1, cosTheta));
-  return (Math.acos(cosTheta) * 180) / Math.PI;
-}
+export function analyzeHand(landmarks) {
+  if (!landmarks || landmarks.length < 21) return null;
 
-/**
- * Menganalisis status keterbukaan/tekukan setiap jari
- * @param {Array} lm - 21 array landmark tangan
- * @returns {Object} status ekstensi jari, jarak, dan orientasi
- */
-export function analyzeHandLandmarks(lm) {
-  if (!lm || lm.length < 21) return null;
-
+  const lm = landmarks;
   const wrist = lm[0];
-  
-  // Titik ujung (TIP) & Titik sendi tengah (PIP / IP) & Pangkal (MCP)
+
+  // Titik kunci
   const thumbTip = lm[4];
   const thumbIP = lm[3];
   const thumbMCP = lm[2];
+  const thumbCMC = lm[1];
 
   const indexTip = lm[8];
   const indexDIP = lm[7];
@@ -72,146 +47,192 @@ export function analyzeHandLandmarks(lm) {
   const indexMCP = lm[5];
 
   const middleTip = lm[12];
+  const middleDIP = lm[11];
   const middlePIP = lm[10];
   const middleMCP = lm[9];
 
   const ringTip = lm[16];
+  const ringDIP = lm[15];
   const ringPIP = lm[14];
   const ringMCP = lm[13];
 
   const pinkyTip = lm[20];
+  const pinkyDIP = lm[19];
   const pinkyPIP = lm[18];
   const pinkyMCP = lm[17];
 
-  // Skala ukuran telapak tangan sebagai acuan normalisasi jarak
-  const palmSize = calculateDistance(wrist, middleMCP);
+  // Ukuran telapak tangan sebagai unit normalisasi standar
+  const palmHeight = dist2D(wrist, middleMCP);
+  const palmWidth = dist2D(indexMCP, pinkyMCP);
 
-  // Status Ekstensi Jari Telunjuk, Tengah, Manis, Kelingking
-  // Jari dianggap TEGAK (extended) jika jarak Tip ke Wrist lebih jauh dari PIP ke Wrist
-  // dan posisi y Tip berada di atas posisi PIP (pada kanvas orientasi tegak)
-  const isIndexExtended = 
-    calculateDistance(indexTip, wrist) > calculateDistance(indexPIP, wrist) * 1.15 &&
-    indexTip.y < indexPIP.y;
+  if (palmHeight < 0.05) {
+    // Tangan terlalu jauh atau tidak valid
+    return null;
+  }
 
-  const isMiddleExtended = 
-    calculateDistance(middleTip, wrist) > calculateDistance(middlePIP, wrist) * 1.15 &&
-    middleTip.y < middlePIP.y;
+  // Helper evaluasi kelurusan jari (Index, Middle, Ring, Pinky)
+  // Jari benar-benar TEGAK jika jarak TIP ke Wrist lebih panjang dari PIP ke Wrist
+  // dan TIP berada lebih tinggi secara signifikan dari DIP dan PIP
+  const checkFingerExtension = (tip, dip, pip, mcp) => {
+    const tipToWrist = dist2D(tip, wrist);
+    const pipToWrist = dist2D(pip, wrist);
+    const mcpToWrist = dist2D(mcp, wrist);
 
-  const isRingExtended = 
-    calculateDistance(ringTip, wrist) > calculateDistance(ringPIP, wrist) * 1.15 &&
-    ringTip.y < ringPIP.y;
+    // Rasio ekstensi terhadap pergelangan
+    const isExtendedRatio = tipToWrist > pipToWrist * 1.25 && tipToWrist > mcpToWrist * 1.35;
+    
+    // Apakah ujung jari terlipat ke arah telapak?
+    const tipToMcp = dist2D(tip, mcp);
+    const pipToMcp = dist2D(pip, mcp);
+    const isCurled = tipToMcp < pipToMcp * 0.95 || tipToWrist < pipToWrist * 1.05;
 
-  const isPinkyExtended = 
-    calculateDistance(pinkyTip, wrist) > calculateDistance(pinkyPIP, wrist) * 1.15 &&
-    pinkyTip.y < pinkyPIP.y;
+    // Evaluasi posisi vertikal (tip lebih tinggi dari pip)
+    const isHigherThanPip = tip.y < pip.y;
 
-  // Analisis Ibu Jari (Thumb):
-  // Ibu jari tegak ke atas (untuk Thumbs Up / Huruf A)
-  const isThumbUp = thumbTip.y < thumbIP.y && thumbTip.y < thumbMCP.y;
-  
-  // Ibu jari merentang ke samping (extended outward)
-  const isThumbExtendedOutward = 
-    calculateDistance(thumbTip, indexMCP) > palmSize * 0.55 &&
-    calculateDistance(thumbTip, pinkyMCP) > palmSize * 0.7;
+    return {
+      isExtended: isExtendedRatio && isHigherThanPip,
+      isCurled: isCurled,
+      tipToWrist,
+      pipToWrist
+    };
+  };
 
-  // Ibu jari terlipat di depan telapak tangan (tucked in)
-  const isThumbTucked = calculateDistance(thumbTip, middleMCP) < palmSize * 0.5;
+  const indexState = checkFingerExtension(indexTip, indexDIP, indexPIP, indexMCP);
+  const middleState = checkFingerExtension(middleTip, middleDIP, middlePIP, middleMCP);
+  const ringState = checkFingerExtension(ringTip, ringDIP, ringPIP, ringMCP);
+  const pinkyState = checkFingerExtension(pinkyTip, pinkyDIP, pinkyPIP, pinkyMCP);
 
-  // Jarak antar ujung jari penting
-  const distThumbIndex = calculateDistance(thumbTip, indexTip);
-  const distIndexMiddle = calculateDistance(indexTip, middleTip);
-  const distMiddleRing = calculateDistance(middleTip, ringTip);
-  const distRingPinky = calculateDistance(ringTip, pinkyTip);
-  const distThumbPinky = calculateDistance(thumbTip, pinkyTip);
+  // Analisis Ibu Jari (Thumb)
+  // 1. Thumb Upright (Thumbs up / Mantap)
+  const isThumbPointingUp = thumbTip.y < thumbIP.y - (palmHeight * 0.1) &&
+                            thumbTip.y < thumbMCP.y - (palmHeight * 0.2) &&
+                            thumbTip.y < indexMCP.y;
+
+  // 2. Thumb Extended Sideways (L, Y, ILY)
+  const thumbDistFromIndex = dist2D(thumbTip, indexMCP);
+  const isThumbOutward = thumbDistFromIndex > palmWidth * 0.7;
+
+  // 3. Thumb Tucked across palm (Huruf B, dll)
+  const thumbDistFromPalmCenter = dist2D(thumbTip, middleMCP);
+  const isThumbTucked = thumbDistFromPalmCenter < palmWidth * 0.55;
+
+  // 4. Thumb Resting beside index (Huruf A)
+  const thumbBesideIndex = dist2D(thumbTip, indexPIP) < palmHeight * 0.4 &&
+                           thumbTip.y < indexMCP.y + (palmHeight * 0.1) &&
+                           !isThumbOutward;
+
+  // Jarak antar ujung jari
+  const distThumbIndex = dist2D(thumbTip, indexTip);
+  const distIndexMiddle = dist2D(indexTip, middleTip);
+  const distMiddleRing = dist2D(middleTip, ringTip);
+  const distRingPinky = dist2D(ringTip, pinkyTip);
+  const distThumbPinky = dist2D(thumbTip, pinkyTip);
 
   // Jumlah 4 jari utama yang tegak
-  const extendedFingersCount = 
-    (isIndexExtended ? 1 : 0) + 
-    (isMiddleExtended ? 1 : 0) + 
-    (isRingExtended ? 1 : 0) + 
-    (isPinkyExtended ? 1 : 0);
+  const extendedCount = 
+    (indexState.isExtended ? 1 : 0) + 
+    (middleState.isExtended ? 1 : 0) + 
+    (ringState.isExtended ? 1 : 0) + 
+    (pinkyState.isExtended ? 1 : 0);
+
+  // Jumlah jari yang terlipat erat
+  const curledCount = 
+    (indexState.isCurled ? 1 : 0) + 
+    (middleState.isCurled ? 1 : 0) + 
+    (ringState.isCurled ? 1 : 0) + 
+    (pinkyState.isCurled ? 1 : 0);
 
   return {
     lm,
-    palmSize,
+    palmHeight,
+    palmWidth,
     wrist,
-    fingers: {
-      thumb: { tip: thumbTip, isUp: isThumbUp, isOutward: isThumbExtendedOutward, isTucked: isThumbTucked },
-      index: { tip: indexTip, isExtended: isIndexExtended },
-      middle: { tip: middleTip, isExtended: isMiddleExtended },
-      ring: { tip: ringTip, isExtended: isRingExtended },
-      pinky: { tip: pinkyTip, isExtended: isPinkyExtended },
+    index: indexState,
+    middle: middleState,
+    ring: ringState,
+    pinky: pinkyState,
+    thumb: {
+      tip: thumbTip,
+      isPointingUp: isThumbPointingUp,
+      isOutward: isThumbOutward,
+      isTucked: isThumbTucked,
+      isBesideIndex: thumbBesideIndex
     },
     counts: {
-      extendedFingersCount,
-      allFiveExtended: extendedFingersCount === 4 && isThumbExtendedOutward
+      extendedCount,
+      curledCount
     },
     distances: {
       distThumbIndex,
       distIndexMiddle,
       distMiddleRing,
       distRingPinky,
-      distThumbPinky,
+      distThumbPinky
     }
   };
 }
 
 /**
- * Klasifikasi Gestur berdasarkan Heuristik Geometris Landmark Tangan
- * Menghasilkan objek { gesture, confidence, description, label }
+ * Mengklasifikasikan gestur tangan berdasarkan aturan geometris yang ketat dan akurat
  */
 export function classifyHandGesture(landmarks) {
-  const analysis = analyzeHandLandmarks(landmarks);
+  const analysis = analyzeHand(landmarks);
   if (!analysis) {
     return { gesture: null, confidence: 0, label: 'Tangan tidak terdeteksi' };
   }
 
-  const { fingers, counts, distances, palmSize, lm } = analysis;
-  const { thumb, index, middle, ring, pinky } = fingers;
-  const { extendedFingersCount, allFiveExtended } = counts;
+  const { index, middle, ring, pinky, thumb, counts, distances, palmHeight, palmWidth, lm } = analysis;
+  const { extendedCount, curledCount } = counts;
 
-  // --------------------------------------------------------------------------
-  // 1. KATA 'HALO' / Sapaan (Semua 5 jari terbuka tegak menghadap kamera)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 1. KATA 'MANTAP' / THUMBS UP
+  // Syarat KETAT: 4 jari (telunjuk-kelingking) HARUS tertekuk rapat ke telapak,
+  // dan HANYA ibu jari yang tegak lurus ke atas dengan ujung lebih tinggi dari kepalan.
+  // ==========================================================================
   if (
-    extendedFingersCount === 4 &&
+    curledCount >= 3 &&
+    extendedCount === 0 &&
+    thumb.isPointingUp &&
+    thumb.tip.y < lm[6].y - (palmHeight * 0.15)
+  ) {
+    return {
+      gesture: 'MANTAP',
+      label: 'Mantap / Bagus',
+      confidence: 0.95,
+      category: 'Ekspresi',
+      description: 'Ibu jari mengacung tegak ke atas (Jempol/Mantap)'
+    };
+  }
+
+  // ==========================================================================
+  // 2. KATA 'HALO' / SAPAAN
+  // Syarat KETAT: Seluruh 5 jari tangan terbuka tegak ke atas menghadap kamera,
+  // jarak antar jari merenggang wajar (bukan merapat seperti Huruf B).
+  // ==========================================================================
+  if (
+    extendedCount === 4 &&
     thumb.isOutward &&
-    distances.distIndexMiddle > palmSize * 0.12
+    distances.distIndexMiddle > palmWidth * 0.22 &&
+    distances.distMiddleRing > palmWidth * 0.22
   ) {
     return {
       gesture: 'HALO',
       label: 'Halo / Hai',
       confidence: 0.94,
       category: 'Kata',
-      description: 'Kelima jari terbuka penuh menghadap kamera (Sapaan Halo)'
+      description: 'Seluruh lima jari terbuka lebar menghadap kamera'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 2. KATA 'MANTAP' / THUMBS UP (Semua 4 jari ditekuk, ibu jari mengacung ke atas)
-  // --------------------------------------------------------------------------
-  if (
-    extendedFingersCount === 0 &&
-    thumb.isUp &&
-    thumb.tip.y < lm[0].y - palmSize * 0.4
-  ) {
-    return {
-      gesture: 'MANTAP',
-      label: 'Mantap / Bagus',
-      confidence: 0.96,
-      category: 'Ekspresi',
-      description: 'Ibu jari tegak mengacung ke atas (Bagus / Mantap)'
-    };
-  }
-
-  // --------------------------------------------------------------------------
-  // 3. KATA 'I LOVE YOU' (ILY Sign: Ibu Jari, Telunjuk, Kelingking TEGAK; Tengah & Manis LIPAT)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 3. KATA 'I LOVE YOU' (ILY Sign)
+  // Syarat: Ibu Jari, Telunjuk, dan Kelingking TEGAK; Tengah & Manis TERTEKUK RAPAT.
+  // ==========================================================================
   if (
     index.isExtended &&
     pinky.isExtended &&
-    !middle.isExtended &&
-    !ring.isExtended &&
+    middle.isCurled &&
+    ring.isCurled &&
     thumb.isOutward
   ) {
     return {
@@ -219,110 +240,105 @@ export function classifyHandGesture(landmarks) {
       label: 'I Love You (Sayang)',
       confidence: 0.95,
       category: 'Ekspresi',
-      description: 'Jempol, telunjuk, dan kelingking terbuka (Simbol Cinta ILY)'
+      description: 'Jempol, telunjuk, dan kelingking terbuka (Simbol ILY)'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 4. KATA 'OKE' (Ujung jempol dan telunjuk bersentuhan membentuk bulatan, 3 jari lain tegak)
-  // --------------------------------------------------------------------------
-  if (
-    middle.isExtended &&
-    ring.isExtended &&
-    pinky.isExtended &&
-    distances.distThumbIndex < palmSize * 0.32
-  ) {
-    return {
-      gesture: 'OKE',
-      label: 'Oke / Sempurna',
-      confidence: 0.92,
-      category: 'Ekspresi',
-      description: 'Ujung jempol & telunjuk bertaut lingkaran, jari lain tegak'
-    };
-  }
-
-  // --------------------------------------------------------------------------
-  // 5. HURUF 'V' (Telunjuk & Tengah tegak memisah huruf V, Manis & Kelingking terlipat)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 4. HURUF 'V' (Peace Sign)
+  // Syarat: Telunjuk & Jari Tengah lurus tegak terbuka memisah sudut V,
+  // Jari Manis & Kelingking tertekuk rapat.
+  // ==========================================================================
   if (
     index.isExtended &&
     middle.isExtended &&
-    !ring.isExtended &&
-    !pinky.isExtended
+    ring.isCurled &&
+    pinky.isCurled &&
+    distances.distIndexMiddle > palmWidth * 0.25
   ) {
     return {
       gesture: 'V',
       label: 'Huruf V',
-      confidence: 0.95,
+      confidence: 0.94,
       category: 'Alfabet',
-      description: 'Telunjuk dan jari tengah tegak memisah membentuk huruf V (Peace)'
+      description: 'Telunjuk dan jari tengah tegak memisah membentuk huruf V'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 6. HURUF 'L' (Telunjuk tegak ke atas, Jempol terentang 90 derajat ke samping)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 5. HURUF 'L'
+  // Syarat: Telunjuk tegak lurus ke atas, Ibu Jari terbuka 90 derajat ke samping,
+  // Jari Tengah, Manis, dan Kelingking terlipat ke telapak.
+  // ==========================================================================
   if (
     index.isExtended &&
     thumb.isOutward &&
-    !middle.isExtended &&
-    !ring.isExtended &&
+    middle.isCurled &&
+    ring.isCurled &&
+    pinky.isCurled &&
     !pinky.isExtended
   ) {
     return {
       gesture: 'L',
       label: 'Huruf L',
-      confidence: 0.94,
+      confidence: 0.93,
       category: 'Alfabet',
-      description: 'Telunjuk tegak dan ibu jari terbuka membentuk sudut siku L'
+      description: 'Telunjuk tegak ke atas dan ibu jari menyiku 90° (Huruf L)'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 7. HURUF 'B' (Keempat jari tegak lurus rapat ke atas, Ibu jari terlipat di depan)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 6. HURUF 'B'
+  // Syarat: Keempat jari (telunjuk, tengah, manis, kelingking) tegak lurus RAPAT,
+  // Ibu jari ditekuk melintang di depan telapak tangan.
+  // ==========================================================================
   if (
-    extendedFingersCount === 4 &&
-    distances.distIndexMiddle < palmSize * 0.35 &&
-    distances.distMiddleRing < palmSize * 0.35 &&
-    (thumb.isTucked || !thumb.isOutward)
+    extendedCount === 4 &&
+    distances.distIndexMiddle < palmWidth * 0.35 &&
+    distances.distMiddleRing < palmWidth * 0.35 &&
+    distances.distRingPinky < palmWidth * 0.35 &&
+    !thumb.isOutward
   ) {
     return {
       gesture: 'B',
       label: 'Huruf B',
       confidence: 0.92,
       category: 'Alfabet',
-      description: 'Empat jari lurus rapat ke atas, jempol terlipat di telapak'
+      description: 'Empat jari tegak lurus rapat ke atas, jempol melipat di telapak'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 8. HURUF 'Y' (Ibu jari dan kelingking merentang ke luar, 3 jari tengah terlipat)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 7. HURUF 'Y' (Shaka / Telepon)
+  // Syarat: HANYA Ibu Jari dan Kelingking yang terbuka lebar ke luar,
+  // 3 jari tengah (telunjuk, tengah, manis) tertekuk erat.
+  // ==========================================================================
   if (
     pinky.isExtended &&
     thumb.isOutward &&
-    !index.isExtended &&
-    !middle.isExtended &&
-    !ring.isExtended
+    index.isCurled &&
+    middle.isCurled &&
+    ring.isCurled
   ) {
     return {
       gesture: 'Y',
       label: 'Huruf Y',
       confidence: 0.93,
       category: 'Alfabet',
-      description: 'Jempol dan kelingking terbuka lebar, 3 jari tengah terlipat'
+      description: 'Ibu jari dan kelingking terentang keluar (Huruf Y)'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 9. HURUF 'I' (Hanya kelingking yang tegak lurus ke atas, jari lainnya tertekuk)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 8. HURUF 'I'
+  // Syarat: HANYA Kelingking yang tegak lurus ke atas,
+  // Telunjuk, Tengah, Manis tertekuk erat, dan Ibu Jari tidak terentang.
+  // ==========================================================================
   if (
     pinky.isExtended &&
-    !index.isExtended &&
-    !middle.isExtended &&
-    !ring.isExtended &&
+    index.isCurled &&
+    middle.isCurled &&
+    ring.isCurled &&
     !thumb.isOutward
   ) {
     return {
@@ -334,136 +350,181 @@ export function classifyHandGesture(landmarks) {
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 10. HURUF 'A' (Kepalan tangan tertutup dengan ibu jari tegak di samping telunjuk)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 9. KATA 'OKE'
+  // Syarat: Ujung Jempol dan Telunjuk saling bersentuhan membentuk bulatan,
+  // Jari Tengah, Manis, dan Kelingking tegak lurus ke atas.
+  // ==========================================================================
   if (
-    extendedFingersCount === 0 &&
-    !thumb.isTucked &&
-    thumb.tip.y < lm[6].y // jempol berada di samping/atas sendi telunjuk
+    middle.isExtended &&
+    ring.isExtended &&
+    pinky.isExtended &&
+    distances.distThumbIndex < palmHeight * 0.35
   ) {
     return {
-      gesture: 'A',
-      label: 'Huruf A',
-      confidence: 0.88,
-      category: 'Alfabet',
-      description: 'Empat jari terlipat rapat, jempol tegak di sisi telunjuk'
+      gesture: 'OKE',
+      label: 'Oke / Sempurna',
+      confidence: 0.92,
+      category: 'Ekspresi',
+      description: 'Ujung jempol dan telunjuk bertaut lingkaran, 3 jari lain tegak'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 11. HURUF 'O' (Ujung jempol dan semua ujung jari melingkar membentuk 'O')
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 10. HURUF 'O'
+  // Syarat: Ujung jari melengkung bertemu atau sangat dekat dengan ujung ibu jari.
+  // ==========================================================================
   if (
-    distances.distThumbIndex < palmSize * 0.28 &&
-    distances.distThumbPinky < palmSize * 0.55 &&
-    extendedFingersCount <= 2
+    distances.distThumbIndex < palmHeight * 0.28 &&
+    distances.distThumbPinky < palmHeight * 0.45 &&
+    extendedCount <= 1
   ) {
     return {
       gesture: 'O',
       label: 'Huruf O',
-      confidence: 0.86,
+      confidence: 0.88,
       category: 'Alfabet',
-      description: 'Ujung jari melengkung bertemu ibu jari membentuk lingkaran O'
+      description: 'Ujung semua jari melengkung bertemu ibu jari membentuk lingkaran'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 12. HURUF 'C' (Semua jari melengkung setengah lingkaran berhadapan dengan jempol)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 11. HURUF 'C'
+  // Syarat: Jari-jari melengkung setengah lingkaran dengan celah terbuka antara jempol dan telunjuk.
+  // ==========================================================================
   if (
-    distances.distThumbIndex > palmSize * 0.28 &&
-    distances.distThumbIndex < palmSize * 0.65 &&
-    index.tip.x !== thumb.tip.x &&
+    distances.distThumbIndex > palmHeight * 0.28 &&
+    distances.distThumbIndex < palmHeight * 0.65 &&
     !index.isExtended &&
-    !pinky.isExtended
+    !middle.isExtended &&
+    !ring.isExtended &&
+    !pinky.isExtended &&
+    !thumb.isPointingUp
   ) {
     return {
       gesture: 'C',
       label: 'Huruf C',
-      confidence: 0.82,
+      confidence: 0.85,
       category: 'Alfabet',
-      description: 'Jari melengkung membentuk lengkungan setengah lingkaran C'
+      description: 'Jari melengkung membentuk siluet huruf C'
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 13. KATA 'TERIMA KASIH' (Tangan mendatar miring dengan 4 jari rapat menyapa ke depan)
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  // 12. HURUF 'A'
+  // Syarat: 4 jari terlipat rapat (kepalan), Ibu Jari berdiri tegak menempel di sisi telunjuk
+  // (bukan mengacung tinggi seperti Mantap/Thumbs Up).
+  // ==========================================================================
   if (
-    extendedFingersCount >= 3 &&
-    Math.abs(index.tip.y - pinky.tip.y) < palmSize * 0.35 &&
-    distances.distIndexMiddle < palmSize * 0.28
+    curledCount >= 3 &&
+    extendedCount === 0 &&
+    thumb.isBesideIndex &&
+    !thumb.isPointingUp
+  ) {
+    return {
+      gesture: 'A',
+      label: 'Huruf A',
+      confidence: 0.89,
+      category: 'Alfabet',
+      description: 'Kepalan tangan rapat, ibu jari tegak di samping jari telunjuk'
+    };
+  }
+
+  // ==========================================================================
+  // 13. KATA 'TERIMA KASIH'
+  // Syarat: 4 jari rapat mendatar dengan orientasi telapak tangan condong ke arah dada/lawan bicara.
+  // ==========================================================================
+  if (
+    extendedCount >= 3 &&
+    Math.abs(analysis.lm[8].y - analysis.lm[20].y) < palmHeight * 0.28 &&
+    distances.distIndexMiddle < palmWidth * 0.3
   ) {
     return {
       gesture: 'TERIMA KASIH',
       label: 'Terima Kasih',
-      confidence: 0.84,
+      confidence: 0.86,
       category: 'Kata',
-      description: 'Empat jari rapat diarahkan dengan sopan (Terima Kasih)'
+      description: 'Empat jari lurus rapat mendatar menyapa sopan'
     };
   }
 
   return {
     gesture: null,
-    label: 'Menunggu Gerakan...',
-    confidence: 0.3,
+    label: 'Menganalisis Gestur...',
+    confidence: 0.2,
     category: null,
-    description: 'Posisikan tangan di depan kamera dengan gestur yang jelas'
+    description: 'Bentuk posisi tangan sesuai panduan di kamus'
   };
 }
 
 /**
- * Filter Peredam Jitter / Debounce Gesture Stabilizer
- * Menghindari pergantian huruf yang terlalu cepat/flicker
+ * Filter Stabilizer Gestur Anti-Flicker
+ * Memerlukan penahanan gestur selama N frame sebelum dikunci
  */
 export class GestureStabilizer {
-  constructor(holdFrames = 10, confidenceThreshold = 0.8) {
-    this.holdFrames = holdFrames;
+  constructor(requiredHoldFrames = 25, confidenceThreshold = 0.85) {
+    this.requiredHoldFrames = requiredHoldFrames;
     this.confidenceThreshold = confidenceThreshold;
-    this.currentCandidate = null;
-    this.frameCount = 0;
-    this.lastEmittedGesture = null;
+    this.candidateGesture = null;
+    this.holdCount = 0;
+    this.cooldownUntil = 0;
   }
 
   update(prediction) {
-    if (!prediction || !prediction.gesture || prediction.confidence < this.confidenceThreshold) {
-      this.frameCount = Math.max(0, this.frameCount - 1);
+    const now = Date.now();
+    if (now < this.cooldownUntil) {
       return {
         stableGesture: null,
         progress: 0,
-        candidate: this.currentCandidate
+        candidate: null,
+        isCooldown: true
       };
     }
 
-    if (prediction.gesture === this.currentCandidate) {
-      this.frameCount++;
-    } else {
-      this.currentCandidate = prediction.gesture;
-      this.frameCount = 1;
+    if (!prediction || !prediction.gesture || prediction.confidence < this.confidenceThreshold) {
+      this.holdCount = Math.max(0, this.holdCount - 2);
+      if (this.holdCount === 0) {
+        this.candidateGesture = null;
+      }
+      return {
+        stableGesture: null,
+        progress: this.holdCount / this.requiredHoldFrames,
+        candidate: this.candidateGesture,
+        isCooldown: false
+      };
     }
 
-    const progress = Math.min(1, this.frameCount / this.holdFrames);
+    if (prediction.gesture === this.candidateGesture) {
+      this.holdCount++;
+    } else {
+      this.candidateGesture = prediction.gesture;
+      this.holdCount = 1;
+    }
 
-    if (this.frameCount >= this.holdFrames) {
-      this.lastEmittedGesture = prediction;
+    const progress = Math.min(1.0, this.holdCount / this.requiredHoldFrames);
+
+    if (this.holdCount >= this.requiredHoldFrames) {
+      // Kunci gestur dan aktifkan cooldown 1.5 detik agar tidak berulang terus-menerus
+      this.cooldownUntil = now + 1500;
+      this.holdCount = 0;
       return {
         stableGesture: prediction,
         progress: 1.0,
-        candidate: this.currentCandidate
+        candidate: this.candidateGesture,
+        isCooldown: false
       };
     }
 
     return {
       stableGesture: null,
       progress,
-      candidate: this.currentCandidate
+      candidate: this.candidateGesture,
+      isCooldown: false
     };
   }
 
   reset() {
-    this.currentCandidate = null;
-    this.frameCount = 0;
-    this.lastEmittedGesture = null;
+    this.candidateGesture = null;
+    this.holdCount = 0;
   }
 }

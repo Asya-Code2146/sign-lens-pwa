@@ -7,7 +7,6 @@ import {
   Volume2, 
   Download, 
   Camera, 
-  Sparkles,
   Calendar,
   AlertCircle
 } from 'lucide-react';
@@ -21,7 +20,6 @@ export default function HistoryView({ onSwitchToCamera }) {
   const [copiedId, setCopiedId] = useState(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
 
-  // Ambil data riwayat hybrid
   const loadHistory = async () => {
     setIsLoading(true);
     const data = await fetchTranslationHistory();
@@ -33,7 +31,6 @@ export default function HistoryView({ onSwitchToCamera }) {
     loadHistory();
   }, []);
 
-  // Format Waktu ke Bahasa Indonesia yang rapi
   const formatTime = (isoString) => {
     try {
       const date = new Date(isoString);
@@ -49,13 +46,11 @@ export default function HistoryView({ onSwitchToCamera }) {
     }
   };
 
-  // Suarakan Kalimat
   const handleSpeak = (text) => {
     soundFX.playPop();
     speakText(text);
   };
 
-  // Salin ke Clipboard
   const handleCopy = (item) => {
     navigator.clipboard.writeText(item.text);
     soundFX.playPop();
@@ -63,7 +58,6 @@ export default function HistoryView({ onSwitchToCamera }) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Hapus satu entri
   const handleDeleteItem = async (id, e) => {
     e.stopPropagation();
     soundFX.playTap();
@@ -71,7 +65,6 @@ export default function HistoryView({ onSwitchToCamera }) {
     setHistoryList(updated);
   };
 
-  // Bersihkan semua riwayat
   const handleClearAll = async () => {
     soundFX.playTap();
     await deleteHistoryItem(null);
@@ -79,7 +72,6 @@ export default function HistoryView({ onSwitchToCamera }) {
     setShowConfirmClear(false);
   };
 
-  // Ekspor Riwayat ke File TXT
   const handleExportText = () => {
     if (historyList.length === 0) return;
     const content = historyList
@@ -99,131 +91,103 @@ export default function HistoryView({ onSwitchToCamera }) {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#090d16] text-slate-100 overflow-hidden">
-      {/* Top Header Riwayat */}
-      <div className="p-4 bg-[#111827] border-b border-slate-800 shadow-md flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-white tracking-wide">Riwayat Terjemahan</h2>
-              <p className="text-[11px] text-slate-400">Penyimpanan Hybrid (Lokal & Server)</p>
-            </div>
-          </div>
-
-          {/* Action Buttons Header */}
-          <div className="flex items-center gap-2">
-            {historyList.length > 0 && (
-              <>
-                <button
-                  onClick={handleExportText}
-                  title="Ekspor ke Teks"
-                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setShowConfirmClear(true)}
-                  title="Bersihkan Semua"
-                  className="p-2 rounded-xl bg-slate-800 hover:bg-rose-900/50 text-slate-300 hover:text-rose-300 transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </>
-            )}
-          </div>
+    <div className="w-full flex-1 flex flex-col gap-5 overflow-hidden">
+      {/* Top Header */}
+      <div className="bg-[#111827] border border-slate-800 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            <Clock className="w-5 h-5 text-teal-400" />
+            <span>Riwayat Terjemahan Kalimat</span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Tersimpan otomatis di penyimpanan lokal dan server backend
+          </p>
         </div>
+
+        {historyList.length > 0 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportText}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Ekspor</span>
+            </button>
+            <button
+              onClick={() => setShowConfirmClear(true)}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Hapus Semua</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Konten Riwayat (Scrollable) */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mb-3"></div>
-            <p className="text-xs">Memuat data riwayat...</p>
-          </div>
-        ) : historyList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-            <div className="w-16 h-16 rounded-3xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-4 text-slate-500">
-              <Clock className="w-8 h-8" />
-            </div>
+      {/* Konten Riwayat */}
+      <div className="flex-1 overflow-y-auto space-y-3 pb-20 pr-1">
+        {historyList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-[#111827] border border-slate-800 rounded-2xl p-8">
+            <Clock className="w-10 h-10 text-slate-600 mb-3" />
             <h3 className="text-base font-bold text-white">Belum Ada Riwayat</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
-              Kalimat yang Anda susun dan simpan di halaman kamera akan otomatis tercatat di sini secara aman.
+            <p className="text-xs text-slate-400 mt-1 max-w-sm">
+              Gunakan kamera untuk menerjemahkan gestur tangan menjadi kalimat dan klik "Simpan".
             </p>
             <button
               onClick={onSwitchToCamera}
-              className="mt-5 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-indigo-600/30"
+              className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition"
             >
-              <Camera className="w-4 h-4" />
-              <span>Buka Kamera Sekarang</span>
+              <Camera className="w-4 h-4" /> Buka Kamera
             </button>
           </div>
         ) : (
           historyList.map((item) => (
             <div
               key={item.id}
-              className="bg-[#111827] border border-slate-800 rounded-2xl p-4 shadow-sm hover:border-slate-700 transition flex flex-col gap-3"
+              className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700 transition"
             >
-              {/* Teks Kalimat Hasil Terjemahan */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <span className="text-xs font-bold text-white block tracking-wide leading-snug">
-                    "{item.text}"
+              <div className="flex-1">
+                <p className="text-sm font-bold text-white tracking-wide">
+                  "{item.text}"
+                </p>
+                <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> {formatTime(item.timestamp)}
                   </span>
-                  <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400 font-medium">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-slate-500" />
-                      {formatTime(item.timestamp)}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
-                      {item.letterCount || item.text.length} Huruf
-                    </span>
-                    <span className="text-indigo-400">
-                      {item.source || 'Kamera Real-time'}
-                    </span>
-                  </div>
+                  <span>•</span>
+                  <span>{item.letterCount || item.text.length} Karakter</span>
                 </div>
-
-                {/* Tombol Hapus per Item */}
-                <button
-                  onClick={(e) => handleDeleteItem(item.id, e)}
-                  className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
-                  title="Hapus"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
               </div>
 
-              {/* Action Bar Bawah Card */}
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
-                {/* Tombol Dengarkan TTS */}
+              <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
                 <button
                   onClick={() => handleSpeak(item.text)}
-                  className="flex-1 py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-indigo-600/20 text-slate-300 hover:text-indigo-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-teal-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
                 >
-                  <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Dengarkan</span>
+                  <Volume2 className="w-3.5 h-3.5" /> Suarakan
                 </button>
 
-                {/* Tombol Salin */}
                 <button
                   onClick={() => handleCopy(item)}
-                  className="flex-1 py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-cyan-600/20 text-slate-300 hover:text-cyan-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
                 >
                   {copiedId === item.id ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400">Tersalin!</span>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" /> Tersalin
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Salin</span>
+                      <Copy className="w-3.5 h-3.5" /> Salin
                     </>
                   )}
+                </button>
+
+                <button
+                  onClick={(e) => handleDeleteItem(item.id, e)}
+                  className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg transition"
+                  title="Hapus"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -231,29 +195,27 @@ export default function HistoryView({ onSwitchToCamera }) {
         )}
       </div>
 
-      {/* Modal Konfirmasi Hapus Semua */}
+      {/* Modal Hapus Semua */}
       {showConfirmClear && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-[#111827] border border-slate-700 w-full max-w-sm rounded-3xl p-5 shadow-2xl flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-rose-950/60 border border-rose-800/60 flex items-center justify-center mb-3 text-rose-400">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <h4 className="text-base font-bold text-white">Hapus Semua Riwayat?</h4>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Tindakan ini akan mengosongkan seluruh log hasil terjemahan dari penyimpanan lokal dan server.
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#111827] border border-slate-700 w-full max-w-sm rounded-2xl p-5 shadow-2xl flex flex-col items-center text-center gap-3">
+            <AlertCircle className="w-10 h-10 text-rose-400" />
+            <h4 className="text-sm font-bold text-white">Kosongkan Seluruh Riwayat?</h4>
+            <p className="text-xs text-slate-400">
+              Semua log terjemahan kalimat yang tersimpan akan dihapus dari perangkat dan database.
             </p>
-            <div className="mt-5 flex items-center gap-2 w-full">
+            <div className="flex items-center gap-2 w-full mt-2">
               <button
                 onClick={() => setShowConfirmClear(false)}
-                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+                className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold"
               >
                 Batal
               </button>
               <button
                 onClick={handleClearAll}
-                className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-rose-600/30"
+                className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold"
               >
-                Ya, Hapus
+                Hapus
               </button>
             </div>
           </div>
