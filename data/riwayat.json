@@ -1,0 +1,30 @@
+[
+  {
+    "id": "riwayat-1794973261093-wp4xz",
+    "text": "HALO DUNIA",
+    "timestamp": "2026-11-18T03:41:01.093Z",
+    "letterCount": 10,
+    "source": "Test Suite"
+  },
+  {
+    "id": "riwayat-1",
+    "text": "HALO",
+    "timestamp": "2026-11-18T09:00:00.000Z",
+    "letterCount": 4,
+    "source": "Kamera Real-time"
+  },
+  {
+    "id": "riwayat-2",
+    "text": "TERIMA KASIH",
+    "timestamp": "2026-11-18T09:30:00.000Z",
+    "letterCount": 12,
+    "source": "Kamera Real-time"
+  },
+  {
+    "id": "riwayat-3",
+    "text": "B A G U S",
+    "timestamp": "2026-11-18T10:00:00.000Z",
+    "letterCount": 5,
+    "source": "Penyusun Kalimat"
+  }
+]
