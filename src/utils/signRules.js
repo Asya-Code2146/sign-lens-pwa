@@ -44,7 +44,7 @@ export function analyzeHand(landmarks) {
     const pipToWrist = dist2D(pip, wrist);
     const mcpToWrist = dist2D(mcp, wrist);
 
-    const isExtendedRatio = tipToWrist > pipToWrist * 1.25 && tipToWrist > mcpToWrist * 1.35;
+    const isExtendedRatio = tipToWrist > pipToWrist * 1.2 && tipToWrist > mcpToWrist * 1.3;
     const isHigherThanPip = tip.y < pip.y;
 
     const tipToMcp = dist2D(tip, mcp);
@@ -68,8 +68,8 @@ export function analyzeHand(landmarks) {
                             thumbTip.y < indexMCP.y;
 
   const thumbDistFromIndex = dist2D(thumbTip, indexMCP);
-  const isThumbOutward = thumbDistFromIndex > palmWidth * 0.7;
-  const isThumbTucked = dist2D(thumbTip, middleMCP) < palmWidth * 0.55;
+  const isThumbOutward = thumbDistFromIndex > palmWidth * 0.75;
+  const isThumbTucked = dist2D(thumbTip, middleMCP) < palmWidth * 0.65 || thumbDistFromIndex < palmWidth * 0.6;
   const isThumbBesideIndex = dist2D(thumbTip, indexPIP) < palmHeight * 0.4 &&
                              thumbTip.y < indexMCP.y + (palmHeight * 0.1) &&
                              !isThumbOutward;
@@ -79,6 +79,11 @@ export function analyzeHand(landmarks) {
   const distMiddleRing = dist2D(middleTip, ringTip);
   const distRingPinky = dist2D(ringTip, pinkyTip);
   const distThumbPinky = dist2D(thumbTip, pinkyTip);
+
+  const isTipsPunchedTogether = 
+    distThumbIndex < palmHeight * 0.35 &&
+    distIndexMiddle < palmHeight * 0.28 &&
+    distMiddleRing < palmHeight * 0.28;
 
   const extendedCount = 
     (indexState.isExtended ? 1 : 0) + 
@@ -115,7 +120,8 @@ export function analyzeHand(landmarks) {
       distMiddleRing,
       distRingPinky,
       distThumbPinky
-    }
+    },
+    isTipsPunchedTogether
   };
 }
 
@@ -208,8 +214,22 @@ export function classifySingleHandGesture(landmarks) {
     return { gesture: null, confidence: 0, label: 'Tangan tidak terdeteksi' };
   }
 
-  const { index, middle, ring, pinky, thumb, counts, distances, palmHeight, palmWidth, lm } = analysis;
+  const { index, middle, ring, pinky, thumb, counts, distances, palmHeight, palmWidth, lm, isTipsPunchedTogether } = analysis;
   const { extendedCount, curledCount } = counts;
+
+  if (
+    isTipsPunchedTogether &&
+    lm[8].y < 0.52 &&
+    !thumb.isPointingUp
+  ) {
+    return {
+      gesture: 'MAKAN',
+      label: 'Makan',
+      confidence: 0.94,
+      category: 'Aktivitas (BISINDO)',
+      description: 'Ujung-ujung jari menguncup mengarah ke dekat mulut'
+    };
+  }
 
   if (
     curledCount >= 3 &&
@@ -228,9 +248,21 @@ export function classifySingleHandGesture(landmarks) {
 
   if (
     extendedCount === 4 &&
+    thumb.isTucked
+  ) {
+    return {
+      gesture: 'B',
+      label: 'Huruf B',
+      confidence: 0.94,
+      category: 'Alfabet',
+      description: 'Empat jari tegak lurus, ibu jari terlipat di telapak'
+    };
+  }
+
+  if (
+    extendedCount === 4 &&
     thumb.isOutward &&
-    distances.distIndexMiddle > palmWidth * 0.22 &&
-    distances.distMiddleRing > palmWidth * 0.22
+    distances.distIndexMiddle > palmWidth * 0.22
   ) {
     return {
       gesture: 'HALO',
@@ -262,7 +294,7 @@ export function classifySingleHandGesture(landmarks) {
     middle.isExtended &&
     ring.isCurled &&
     pinky.isCurled &&
-    distances.distIndexMiddle > palmWidth * 0.25
+    distances.distIndexMiddle > palmWidth * 0.2
   ) {
     return {
       gesture: 'V',
@@ -286,21 +318,6 @@ export function classifySingleHandGesture(landmarks) {
       confidence: 0.93,
       category: 'Alfabet',
       description: 'Telunjuk dan ibu jari menyiku 90°'
-    };
-  }
-
-  if (
-    extendedCount === 4 &&
-    distances.distIndexMiddle < palmWidth * 0.35 &&
-    distances.distMiddleRing < palmWidth * 0.35 &&
-    !thumb.isOutward
-  ) {
-    return {
-      gesture: 'B',
-      label: 'Huruf B',
-      confidence: 0.92,
-      category: 'Alfabet',
-      description: 'Empat jari lurus rapat ke atas'
     };
   }
 
@@ -354,7 +371,8 @@ export function classifySingleHandGesture(landmarks) {
   if (
     distances.distThumbIndex < palmHeight * 0.28 &&
     distances.distThumbPinky < palmHeight * 0.45 &&
-    extendedCount <= 1
+    extendedCount <= 1 &&
+    !isTipsPunchedTogether
   ) {
     return {
       gesture: 'O',
@@ -371,6 +389,15 @@ export function classifySingleHandGesture(landmarks) {
     !index.isExtended && !middle.isExtended && !ring.isExtended && !pinky.isExtended &&
     !thumb.isPointingUp
   ) {
+    if (lm[8].y < 0.45) {
+      return {
+        gesture: 'MINUM',
+        label: 'Minum',
+        confidence: 0.91,
+        category: 'Aktivitas (BISINDO)',
+        description: 'Tangan melengkung seperti memegang cangkir di dekat mulut'
+      };
+    }
     return {
       gesture: 'C',
       label: 'Huruf C',

@@ -538,7 +538,7 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
 
         <div className="bg-[#121215] border border-zinc-800/80 rounded-2xl p-3 flex flex-col gap-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-zinc-400 text-[11px]">Dukungan 1 & 2 Tangan:</span>
+            <span className="font-semibold text-zinc-400 text-[11px]">Dukungan Isyarat:</span>
             <button
               onClick={onNavigateToDictionary}
               className="text-zinc-300 hover:text-white text-[11px]"
@@ -547,7 +547,7 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
             </button>
           </div>
           <div className="flex flex-wrap gap-1">
-            {['A', 'B', 'C', 'V', 'L', 'O', 'Y', 'I', 'TERIMA KASIH (2 Tangan)', 'SAMA-SAMA (2 Tangan)', 'HALO', 'MANTAP', 'CINTA (2 Tangan)', 'OKE'].map(code => (
+            {['A', 'B', 'C', 'V', 'L', 'O', 'Y', 'I', 'MAKAN', 'MINUM', 'LAPAR', 'TOLONG', 'MAAF', 'HALO', 'TERIMA KASIH (2 Tangan)', 'SAMA-SAMA (2 Tangan)', 'MANTAP', 'CINTA (2 Tangan)', 'OKE'].map(code => (
               <span
                 key={code}
                 className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-400"
@@ -582,20 +582,20 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
             </div>
             <div className="text-xs text-zinc-300 space-y-2 max-h-[60vh] overflow-y-auto pr-1">
               <div className="p-2.5 rounded-lg bg-[#18181b] border border-zinc-800">
+                <strong className="text-white block mb-0.5">Huruf B (SIBI):</strong>
+                Tegakkan 4 jari ke atas, tekuk ibu jari melintang di depan telapak.
+              </div>
+              <div className="p-2.5 rounded-lg bg-[#18181b] border border-zinc-800">
+                <strong className="text-white block mb-0.5">Makan (BISINDO):</strong>
+                Kuncupkan ujung semua jari mengarah ke dekat mulut.
+              </div>
+              <div className="p-2.5 rounded-lg bg-[#18181b] border border-zinc-800">
+                <strong className="text-white block mb-0.5">Minum (BISINDO):</strong>
+                Bentuk tangan C seperti memegang cangkir di dekat mulut.
+              </div>
+              <div className="p-2.5 rounded-lg bg-[#18181b] border border-zinc-800">
                 <strong className="text-white block mb-0.5">Terima Kasih (2 Tangan / BISINDO):</strong>
                 Buka kedua telapak tangan mendatar sejajar di depan dada, gerakkan maju perlahan.
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#18181b] border border-zinc-800">
-                <strong className="text-white block mb-0.5">Sama-Sama (2 Tangan / BISINDO):</strong>
-                Satukan kedua telapak tangan menangkup di depan dada.
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#18181b] border border-zinc-800">
-                <strong className="text-white block mb-0.5">Cinta / Hati (2 Tangan):</strong>
-                Satukan kedua tangan membentuk lekukan lambang hati.
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#18181b] border border-zinc-800">
-                <strong className="text-white block mb-0.5">Huruf A, B, C, V, L, O, Y, I (SIBI):</strong>
-                Gunakan 1 tangan sesuai alfabet baku isyarat.
               </div>
             </div>
             <button
