@@ -14,9 +14,8 @@ import {
   AlertTriangle,
   Play,
   Plus,
-  Eye,
   HandMetal,
-  Settings2
+  Users
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { 
@@ -25,7 +24,7 @@ import {
   drawLandmarks, 
   HAND_CONNECTIONS 
 } from '../utils/mediapipeLoader';
-import { classifyHandGesture, GestureStabilizer } from '../utils/signRules';
+import { classifyMultiHands, GestureStabilizer } from '../utils/signRules';
 import { saveTranslationHistory } from '../utils/storage';
 import { speakText } from '../utils/tts';
 import { soundFX } from '../utils/soundEffects';
@@ -37,8 +36,8 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
   const handsInstanceRef = useRef(null);
   const animationFrameIdRef = useRef(null);
   
-  // Stabilizer dengan jeda 35 frame (~1.2 detik pada 30fps)
-  const stabilizerRef = useRef(new GestureStabilizer(35, 0.85));
+  // Stabilizer anti-flicker
+  const stabilizerRef = useRef(new GestureStabilizer(30, 0.85));
 
   // State Kamera & Model
   const [cameraFacing, setCameraFacing] = useState('user'); // 'user' (depan) atau 'environment' (belakang)
@@ -46,7 +45,7 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
   const [isLoadingModel, setIsLoadingModel] = useState(true);
   const [cameraError, setCameraError] = useState(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-  const [isAutoAppend, setIsAutoAppend] = useState(false); // Default Manual agar tidak spam
+  const [isAutoAppend, setIsAutoAppend] = useState(false); // Default Manual agar pengguna memegang kendali penuh
 
   // State Deteksi & Kalimat
   const [detectedGesture, setDetectedGesture] = useState(null);
@@ -55,7 +54,7 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
   const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
   const [showQuickGuide, setShowQuickGuide] = useState(false);
   const [fps, setFps] = useState(0);
-  const [hasHandInFrame, setHasHandInFrame] = useState(false);
+  const [handCount, setHandCount] = useState(0);
 
   // Perhitungan FPS & Debounce
   const lastFrameTimeRef = useRef(performance.now());
@@ -65,7 +64,6 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
   const handleAppendSymbol = useCallback((symbol) => {
     if (!symbol) return;
     setSentence((prev) => {
-      // Jika kata panjang seperti 'HALO' atau 'TERIMA KASIH', tambahkan dengan spasi jika sudah ada kata
       if (symbol.length > 1) {
         return prev ? `${prev} ${symbol} ` : `${symbol} `;
       }
@@ -77,7 +75,7 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
     }
   }, [isSoundEnabled]);
 
-  // Callback Hasil Deteksi dari MediaPipe Hands
+  // Callback Hasil Deteksi dari MediaPipe Hands (Dua Tangan)
   const onResults = useCallback((results) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -98,40 +96,42 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
     ctx.save();
     ctx.clearRect(0, 0, width, height);
 
-    // KUNCI PERBAIKAN: Jika mirroring aktif, transformasikan kanvas SEBELUM
-    // menggambar video DAN SEBELUM menggambar landmark!
-    // Ini menjamin posisi titik sensor dan video berada di koordinat yang sama 100%!
+    // KUNCI MIRRORING: Terapkan transformasi cermin ke KANVAS SEBELUM menggambar video dan landmark
     const shouldMirror = isMirror && cameraFacing === 'user';
     if (shouldMirror) {
       ctx.translate(width, 0);
       ctx.scale(-1, 1);
     }
 
-    // 1. Gambar frame video webcam
+    // 1. Gambar frame video
     ctx.drawImage(results.image, 0, 0, width, height);
 
-    // 2. Gambar garis & titik sensor tangan di dalam koordinat transform yang SAMA
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      setHasHandInFrame(true);
-      const landmarks = results.multiHandLandmarks[0];
+    // 2. Gambar garis & titik sensor untuk KEDUA TANGAN
+    const detectedHands = results.multiHandLandmarks || [];
+    setHandCount(detectedHands.length);
 
-      // Garis penghubung sendi tangan (Cyan to Teal modern)
-      drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
-        color: '#06b6d4',
-        lineWidth: 3
-      });
+    if (detectedHands.length > 0) {
+      detectedHands.forEach((landmarks, idx) => {
+        // Tangan 1: Cyan/Emerald, Tangan 2: Purple/Amber
+        const lineColor = idx === 0 ? '#06b6d4' : '#a855f7';
+        const dotColor = idx === 0 ? '#10b981' : '#f59e0b';
 
-      // Titik sendi jari (Emerald Green dengan outline putih)
-      drawLandmarks(ctx, landmarks, {
-        color: '#10b981',
-        lineWidth: 1.5,
-        radius: 4
+        drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
+          color: lineColor,
+          lineWidth: 3
+        });
+
+        drawLandmarks(ctx, landmarks, {
+          color: dotColor,
+          lineWidth: 1.5,
+          radius: 4
+        });
       });
 
       ctx.restore(); // Kembalikan konteks kanvas ke normal
 
-      // 3. Klasifikasikan gestur
-      const prediction = classifyHandGesture(landmarks);
+      // 3. Klasifikasikan gestur (otomatis mengenali 1 tangan atau 2 tangan)
+      const prediction = classifyMultiHands(detectedHands);
       const stability = stabilizerRef.current.update(prediction);
 
       setGestureProgress(stability.progress);
@@ -139,12 +139,10 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
       if (prediction.gesture) {
         setDetectedGesture(prediction);
 
-        // Jika mode Auto-Append diaktifkan pengguna dan gestur telah ditahan secara stabil
         if (isAutoAppend && stability.stableGesture) {
           const nowTime = Date.now();
           const last = lastAddedRef.current;
 
-          // Jeda minimal 1.5 detik antar penambahan simbol yang sama agar tidak spam
           if (last.symbol !== stability.stableGesture.gesture || (nowTime - last.time > 1500)) {
             lastAddedRef.current = {
               symbol: stability.stableGesture.gesture,
@@ -159,14 +157,13 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
       }
     } else {
       ctx.restore();
-      setHasHandInFrame(false);
       setDetectedGesture(null);
       setGestureProgress(0);
       stabilizerRef.current.reset();
     }
   }, [isMirror, cameraFacing, isAutoAppend, handleAppendSymbol]);
 
-  // Inisialisasi MediaPipe Hands & Kamera Web
+  // Inisialisasi MediaPipe Hands (Mendukung hingga 2 tangan secara simultan)
   useEffect(() => {
     let isMounted = true;
     setIsLoadingModel(true);
@@ -182,11 +179,12 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
 
+        // Konfigurasi DUA TANGAN (maxNumHands: 2)
         hands.setOptions({
-          maxNumHands: 1,
+          maxNumHands: 2,
           modelComplexity: 1,
-          minDetectionConfidence: 0.7,
-          minTrackingConfidence: 0.7
+          minDetectionConfidence: 0.65,
+          minTrackingConfidence: 0.65
         });
 
         hands.onResults(onResults);
@@ -264,44 +262,36 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
     };
   }, [cameraFacing, onResults]);
 
-  // Tombol Ganti Kamera Depan / Belakang
   const handleToggleCameraFacing = () => {
     if (isSoundEnabled) soundFX.playTap();
     setCameraFacing(prev => (prev === 'user' ? 'environment' : 'user'));
     setIsMirror(prev => !prev);
   };
 
-  // Tombol Tambah Spasi
   const handleAddSpace = () => {
     if (isSoundEnabled) soundFX.playTap();
     setSentence(prev => (prev && !prev.endsWith(' ') ? prev + ' ' : prev));
   };
 
-  // Tombol Hapus 1 Karakter
   const handleBackspace = () => {
     if (isSoundEnabled) soundFX.playTap();
     setSentence(prev => {
       if (!prev) return '';
-      if (prev.endsWith(' ')) {
-        return prev.slice(0, -1);
-      }
+      if (prev.endsWith(' ')) return prev.slice(0, -1);
       return prev.slice(0, -1);
     });
   };
 
-  // Tombol Bersihkan Kalimat
   const handleClearSentence = () => {
     if (isSoundEnabled) soundFX.playTap();
     setSentence('');
   };
 
-  // Tombol Suara TTS
   const handleSpeak = () => {
     if (!sentence.trim()) return;
     speakText(sentence);
   };
 
-  // Tombol Simpan ke Riwayat
   const handleSaveToHistory = async () => {
     if (!sentence.trim()) return;
 
@@ -328,7 +318,6 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
 
   return (
     <div className="w-full flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-5 overflow-hidden">
-      {/* Video stream mentah tersembunyi */}
       <video
         ref={videoRef}
         playsInline
@@ -337,28 +326,25 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
       />
 
       {/* ==================================================================== */}
-      {/* KOLOM KIRI (7/12 Desktop): FEED KAMERA & CANVAS OVERLAY BESAR */}
+      {/* KOLOM KIRI (7/12 Desktop): FEED KAMERA & CANVAS OVERLAY DUA TANGAN */}
       {/* ==================================================================== */}
       <div className="lg:col-span-7 flex flex-col bg-[#111827] border border-slate-800 rounded-2xl overflow-hidden shadow-lg relative min-h-[340px] sm:min-h-[460px]">
-        {/* Kanvas MediaPipe & Landmark */}
         <div className="relative flex-1 w-full bg-black flex items-center justify-center overflow-hidden">
           <canvas
             ref={canvasRef}
             className="w-full h-full object-contain"
           />
 
-          {/* Loading Overlay */}
           {isLoadingModel && (
             <div className="absolute inset-0 bg-[#0b0f19]/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-6 text-center">
               <div className="w-12 h-12 rounded-full border-4 border-slate-700 border-t-teal-400 animate-spin mb-3" />
-              <h3 className="text-sm font-bold text-white tracking-wide">Menyiapkan Sensor Landmark Tangan</h3>
+              <h3 className="text-sm font-bold text-white tracking-wide">Menyiapkan Sensor Dua Tangan</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                Memuat modul MediaPipe 21 Landmark langsung di perangkat Anda...
+                Memuat modul MediaPipe Dual-Hand Landmark (1 & 2 Tangan)...
               </p>
             </div>
           )}
 
-          {/* Error Kamera */}
           {cameraError && (
             <div className="absolute inset-0 bg-red-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-6 text-center">
               <AlertTriangle className="w-10 h-10 text-rose-400 mb-2" />
@@ -377,9 +363,11 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
           <div className="absolute top-3 inset-x-3 flex items-center justify-between z-20 pointer-events-auto">
             <div className="flex items-center gap-2">
               <div className="px-3 py-1 rounded-lg bg-slate-900/85 backdrop-blur-md border border-slate-700 flex items-center gap-2 text-xs">
-                <span className={`w-2 h-2 rounded-full ${hasHandInFrame ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${handCount > 0 ? (handCount >= 2 ? 'bg-purple-400 animate-pulse' : 'bg-emerald-400 animate-pulse') : 'bg-slate-500'}`} />
                 <span className="font-semibold text-slate-200">
-                  {hasHandInFrame ? 'Tangan Terdeteksi' : 'Mencari Tangan'}
+                  {handCount === 0 && 'Mencari Tangan'}
+                  {handCount === 1 && '1 Tangan Terdeteksi'}
+                  {handCount >= 2 && '2 Tangan Terdeteksi (Dual-Hand)'}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono border-l border-slate-700 pl-2">{fps} FPS</span>
               </div>
@@ -416,7 +404,9 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
 
         {/* Petunjuk Posisi Tangan di Bawah Feed */}
         <div className="bg-[#0b0f19] px-4 py-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-          <span>Posisikan telapak tangan berjarak ~30-60 cm menghadap kamera</span>
+          <span className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-teal-400" /> Mendukung isyarat 1 tangan (SIBI) & 2 tangan (BISINDO)
+          </span>
           <button
             onClick={() => setShowQuickGuide(true)}
             className="text-teal-400 hover:underline flex items-center gap-1 text-[11px]"
@@ -436,7 +426,6 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
             <span className="text-xs uppercase tracking-wider font-bold text-slate-400">
               Hasil Deteksi Real-Time
             </span>
-            {/* Toggle Mode Manual vs Auto-Append */}
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-slate-400">Auto Tambah:</span>
               <button
@@ -463,16 +452,22 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
                     {detectedGesture.gesture}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white leading-tight">
-                      {detectedGesture.label}
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-white leading-tight">
+                        {detectedGesture.label}
+                      </h4>
+                      {detectedGesture.category && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-teal-400 font-semibold border border-teal-500/20">
+                          {detectedGesture.category}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       {detectedGesture.description}
                     </p>
                   </div>
                 </div>
 
-                {/* Tombol Tambah Manual (Bersih, tidak spam!) */}
                 <button
                   onClick={() => handleAppendSymbol(detectedGesture.gesture)}
                   className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95"
@@ -484,12 +479,11 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
             ) : (
               <div className="flex items-center gap-2 text-slate-500 text-xs">
                 <HandMetal className="w-4 h-4 text-slate-600" />
-                <span>Bentuk isyarat tangan (misal: A, B, C, V, Halo, Mantap)</span>
+                <span>Bentuk isyarat tangan (misal: Huruf A, V, Halo, Terima Kasih, Mantap)</span>
               </div>
             )}
           </div>
 
-          {/* Progress Bar Penahanan (Jika Auto-Append Aktif) */}
           {isAutoAppend && (
             <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
               <div 
@@ -511,7 +505,6 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
             </span>
           </div>
 
-          {/* Area Teks Kalimat */}
           <div className="bg-[#0b0f19] border border-slate-800 rounded-xl p-3 min-h-[90px] flex-1 flex flex-col justify-between">
             <p className="text-sm font-semibold text-white tracking-wide break-words leading-relaxed">
               {sentence ? (
@@ -526,7 +519,6 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
               )}
             </p>
 
-            {/* Suara TTS */}
             {sentence && (
               <div className="pt-2 flex justify-end">
                 <button
@@ -539,7 +531,7 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
             )}
           </div>
 
-          {/* Baris Tombol Aksi Penyusun Kalimat */}
+          {/* Baris Tombol Aksi */}
           <div className="grid grid-cols-4 gap-2 pt-1">
             <button
               onClick={handleAddSpace}
@@ -581,19 +573,19 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
         {/* Quick Reference Mini Cards */}
         <div className="bg-[#111827] border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-slate-300">Isyarat yang Didukung Kamera:</span>
+            <span className="font-bold text-slate-300">Dukungan 1 & 2 Tangan:</span>
             <button
               onClick={onNavigateToDictionary}
               className="text-teal-400 hover:underline text-[11px]"
             >
-              Buka Kamus Lengkap →
+              Buka Kamus SIBI/BISINDO →
             </button>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {['A', 'B', 'C', 'V', 'L', 'O', 'Y', 'I', 'HALO', 'TERIMA KASIH', 'MANTAP', 'I LOVE YOU', 'OKE'].map(code => (
+            {['A', 'B', 'C', 'V', 'L', 'O', 'Y', 'I', 'TERIMA KASIH (2 Tangan)', 'SAMA-SAMA (2 Tangan)', 'HALO', 'MANTAP', 'CINTA (2 Tangan)', 'OKE'].map(code => (
               <span
                 key={code}
-                className="px-2 py-1 rounded-md bg-[#0b0f19] border border-slate-800 text-[11px] font-mono text-slate-300"
+                className="px-2 py-1 rounded-md bg-[#0b0f19] border border-slate-800 text-[10px] font-mono text-slate-300"
               >
                 {code}
               </span>
@@ -602,7 +594,6 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
         </div>
       </div>
 
-      {/* Pop-up Notifikasi Berhasil Disimpan */}
       {saveSuccessNotice && (
         <div className="fixed top-20 right-6 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-200">
           <CheckCircle2 className="w-4 h-4 text-white" />
@@ -610,13 +601,12 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
         </div>
       )}
 
-      {/* Modal Panduan Gestur Singkat */}
       {showQuickGuide && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#111827] border border-slate-700 w-full max-w-md rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-teal-400" /> Panduan Pembacaan Gestur
+                <HelpCircle className="w-4 h-4 text-teal-400" /> Panduan Pembacaan 1 & 2 Tangan
               </h3>
               <button
                 onClick={() => setShowQuickGuide(false)}
@@ -627,24 +617,20 @@ export default function DetectionView({ onNavigateToHistory, onNavigateToDiction
             </div>
             <div className="text-xs text-slate-300 space-y-2 max-h-[60vh] overflow-y-auto pr-1">
               <div className="p-2.5 rounded-lg bg-[#0b0f19] border border-slate-800">
-                <strong className="text-white block mb-0.5">Huruf A:</strong>
-                Kepalkan 4 jari rapat ke telapak, ibu jari berdiri tegak di samping luar jari telunjuk.
+                <strong className="text-teal-400 block mb-0.5">Terima Kasih (Dua Tangan / BISINDO):</strong>
+                Buka kedua telapak tangan mendatar sejajar di depan dada, gerakkan maju perlahan menyapa sopan.
               </div>
               <div className="p-2.5 rounded-lg bg-[#0b0f19] border border-slate-800">
-                <strong className="text-white block mb-0.5">Huruf B:</strong>
-                Luruskan keempat jari tegak ke atas secara rapat, tekuk ibu jari di depan telapak tangan.
+                <strong className="text-teal-400 block mb-0.5">Sama-Sama (Dua Tangan / BISINDO):</strong>
+                Satukan kedua telapak tangan menangkup di depan dada.
               </div>
               <div className="p-2.5 rounded-lg bg-[#0b0f19] border border-slate-800">
-                <strong className="text-white block mb-0.5">Huruf V:</strong>
-                Tegakkan telunjuk dan jari tengah membentuk huruf V (peace), jari manis & kelingking terlipat.
+                <strong className="text-teal-400 block mb-0.5">Cinta / Bentuk Hati (Dua Tangan):</strong>
+                Satukan kedua tangan membentuk lekukan lambang hati di depan dada.
               </div>
               <div className="p-2.5 rounded-lg bg-[#0b0f19] border border-slate-800">
-                <strong className="text-white block mb-0.5">Kata 'HALO':</strong>
-                Buka seluruh 5 jari tegak lurus menghadap kamera secara santai.
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#0b0f19] border border-slate-800">
-                <strong className="text-white block mb-0.5">Kata 'MANTAP' (Thumbs Up):</strong>
-                Kepalkan seluruh 4 jari rapat, hanya ibu jari yang mengacung tegak ke atas.
+                <strong className="text-white block mb-0.5">Huruf A, B, C, V, L, O, Y, I (SIBI):</strong>
+                Cukup gunakan 1 tangan sesuai alfabet baku isyarat.
               </div>
             </div>
             <button

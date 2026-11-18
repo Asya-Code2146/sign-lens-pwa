@@ -3,20 +3,21 @@ import DetectionView from './components/DetectionView';
 import DictionaryView from './components/DictionaryView';
 import HistoryView from './components/HistoryView';
 import AboutView from './components/AboutView';
-import PwaInstallPrompt from './components/PwaInstallPrompt';
+import { usePwaInstall } from './utils/pwaInstall';
 import { 
   Video, 
   BookOpen, 
   History, 
   Info, 
   HandMetal, 
-  Sparkles,
-  Wifi,
-  Download
+  Download,
+  CheckCircle2,
+  Users
 } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('detection'); // 'detection' | 'dictionary' | 'history' | 'about'
+  const { isInstalled, triggerInstall } = usePwaInstall();
 
   const navItems = [
     { id: 'detection', label: 'Kamera Deteksi', icon: Video },
@@ -27,7 +28,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
-      {/* Top Professional Navigation Bar (Desktop & Mobile) */}
+      {/* Top Professional Navigation Bar */}
       <header className="h-16 w-full bg-[#111827]/95 border-b border-slate-800 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-3">
@@ -38,11 +39,11 @@ export default function App() {
             <div className="flex items-center gap-2">
               <span className="font-bold text-base tracking-tight text-white">ISYARATKU</span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                100% Client-Side AI
+                1 & 2 Tangan
               </span>
             </div>
             <p className="text-[11px] text-slate-400 hidden sm:block">
-              Penerjemah Bahasa Isyarat Real-Time Tanpa API Key Eksternal
+              Penerjemah Bahasa Isyarat SIBI & BISINDO (100% Client-Side AI)
             </p>
           </div>
         </div>
@@ -69,19 +70,27 @@ export default function App() {
           })}
         </nav>
 
-        {/* Status & PWA Install Notice */}
+        {/* Tombol Install Aplikasi di Navbar */}
         <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>MediaPipe 21 Landmarks</span>
-          </div>
+          {isInstalled ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-xs font-semibold shadow-sm">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>Aplikasi Sudah Diinstall</span>
+            </div>
+          ) : (
+            <button
+              onClick={triggerInstall}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-xs font-bold transition shadow-sm active:scale-95"
+              title="Pasang aplikasi Isyaratku ke HP / Desktop"
+            >
+              <Download className="w-4 h-4" />
+              <span>Install Aplikasi</span>
+            </button>
+          )}
         </div>
       </header>
 
-      {/* PWA Install Banner */}
-      <PwaInstallPrompt />
-
-      {/* Main App Content Area (Full Width & Responsive) */}
+      {/* Main App Content Area */}
       <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-6 flex flex-col overflow-hidden">
         {activeTab === 'detection' && (
           <DetectionView
@@ -107,7 +116,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Mobile Bottom Navigation Bar (Visible only on Mobile Screens) */}
+      {/* Mobile Bottom Navigation Bar */}
       <nav className="md:hidden w-full bg-[#111827]/95 backdrop-blur-xl border-t border-slate-800 px-2 py-2 flex items-center justify-around sticky bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
         {navItems.map((item) => {
           const Icon = item.icon;
