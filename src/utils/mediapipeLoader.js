@@ -1,16 +1,7 @@
-/**
- * ============================================================================
- * MEDIAPIPE LOADER & COMPATIBILITY LAYER
- * ============================================================================
- * Menangani perbedaan resolusi impor CJS/ESM untuk package @mediapipe di Vite.
- * Menyediakan Hands, Camera, drawConnectors, drawLandmarks, dan HAND_CONNECTIONS.
- */
-
 import * as mpHandsNamespace from '@mediapipe/hands';
 import * as mpCameraNamespace from '@mediapipe/camera_utils';
 import * as mpDrawingNamespace from '@mediapipe/drawing_utils';
 
-// Helper ekstraksi ekspor yang kompatibel untuk bundler ESM (Vite)
 function resolveExport(moduleObj, property) {
   if (moduleObj && moduleObj[property]) return moduleObj[property];
   if (moduleObj && moduleObj.default && moduleObj.default[property]) return moduleObj.default[property];
@@ -28,12 +19,12 @@ export const HAND_CONNECTIONS =
   mpHandsNamespace.HAND_CONNECTIONS || 
   (mpHandsNamespace.default && mpHandsNamespace.default.HAND_CONNECTIONS) ||
   [
-    [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
-    [0, 5], [5, 6], [6, 7], [7, 8], // Index
-    [5, 9], [9, 10], [10, 11], [11, 12], // Middle
-    [9, 13], [13, 14], [14, 15], [15, 16], // Ring
-    [13, 17], [17, 18], [18, 19], [19, 20], // Pinky
-    [0, 17] // Palm base
+    [0, 1], [1, 2], [2, 3], [3, 4],
+    [0, 5], [5, 6], [6, 7], [7, 8],
+    [5, 9], [9, 10], [10, 11], [11, 12],
+    [9, 13], [13, 14], [14, 15], [15, 16],
+    [13, 17], [17, 18], [18, 19], [19, 20],
+    [0, 17]
   ];
 
 export const Camera = 
@@ -45,11 +36,10 @@ export const drawConnectors =
   resolveExport(mpDrawingNamespace, 'drawConnectors') || 
   mpDrawingNamespace.drawConnectors || 
   (mpDrawingNamespace.default && mpDrawingNamespace.default.drawConnectors) ||
-  // Fallback kanvas manual jika drawing_utils tidak tersedia
   function (ctx, landmarks, connections, style) {
     if (!landmarks || !connections) return;
     ctx.save();
-    ctx.strokeStyle = (style && style.color) || '#38bdf8';
+    ctx.strokeStyle = (style && style.color) || '#06b6d4';
     ctx.lineWidth = (style && style.lineWidth) || 3;
     for (const [i, j] of connections) {
       const p1 = landmarks[i];
@@ -68,12 +58,11 @@ export const drawLandmarks =
   resolveExport(mpDrawingNamespace, 'drawLandmarks') || 
   mpDrawingNamespace.drawLandmarks || 
   (mpDrawingNamespace.default && mpDrawingNamespace.default.drawLandmarks) ||
-  // Fallback kanvas manual
   function (ctx, landmarks, style) {
     if (!landmarks) return;
     ctx.save();
     const radius = (style && style.radius) || 4;
-    const color = (style && style.color) || '#6366f1';
+    const color = (style && style.color) || '#10b981';
     for (const p of landmarks) {
       if (p) {
         ctx.beginPath();

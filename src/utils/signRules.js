@@ -1,26 +1,9 @@
-/**
- * ============================================================================
- * MESIN PENGENALAN GESTUR BAHASA ISYARAT (DUAL-HAND & SINGLE-HAND BISINDO/SIBI)
- * ============================================================================
- * Mendukung deteksi 1 tangan (SIBI/Alfabet) dan 2 tangan (BISINDO/Bahasa Isyarat Alami)
- * Menggunakan 21 Titik Landmark MediaPipe Hands:
- *  0: WRIST
- *  1-4: THUMB (Ibu Jari)
- *  5-8: INDEX (Telunjuk)
- *  9-12: MIDDLE (Jari Tengah)
- *  13-16: RING (Jari Manis)
- *  17-20: PINKY (Kelingking)
- */
-
 export function dist2D(p1, p2) {
   const dx = p1.x - p2.x;
   const dy = p1.y - p2.y;
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-/**
- * Menganalisis kondisi 1 tangan secara geometris
- */
 export function analyzeHand(landmarks) {
   if (!landmarks || landmarks.length < 21) return null;
 
@@ -80,7 +63,6 @@ export function analyzeHand(landmarks) {
   const ringState = checkFingerExtension(ringTip, ringDIP, ringPIP, ringMCP);
   const pinkyState = checkFingerExtension(pinkyTip, pinkyDIP, pinkyPIP, pinkyMCP);
 
-  // Ibu Jari
   const isThumbPointingUp = thumbTip.y < thumbIP.y - (palmHeight * 0.1) &&
                             thumbTip.y < thumbMCP.y - (palmHeight * 0.2) &&
                             thumbTip.y < indexMCP.y;
@@ -137,9 +119,6 @@ export function analyzeHand(landmarks) {
   };
 }
 
-/**
- * Klasifikasi Gestur DUA TANGAN (BISINDO & Isyarat Alami Komunitas Tuli)
- */
 export function classifyTwoHandsGesture(hand1Lm, hand2Lm) {
   const h1 = analyzeHand(hand1Lm);
   const h2 = analyzeHand(hand2Lm);
@@ -150,21 +129,19 @@ export function classifyTwoHandsGesture(hand1Lm, hand2Lm) {
   const distIndexTips = dist2D(h1.lm[8], h2.lm[8]);
   const distMiddleTips = dist2D(h1.lm[12], h2.lm[12]);
 
-  // 1. DUA JEMPOL (MANTAP BANGET / BISINDO)
   if (
     h1.thumb.isPointingUp && h1.counts.curledCount >= 3 &&
     h2.thumb.isPointingUp && h2.counts.curledCount >= 3
   ) {
     return {
       gesture: 'MANTAP',
-      label: 'Mantap / Dua Jempol',
+      label: 'Mantap',
       confidence: 0.98,
-      category: 'Dua Tangan (BISINDO)',
-      description: 'Kedua tangan mengacungkan jempol ke atas secara serentak'
+      category: 'BISINDO (2 Tangan)',
+      description: 'Kedua ibu jari mengacung ke atas'
     };
   }
 
-  // 2. CINTA / BENTUK HATI (Heart Hand Sign)
   if (
     distThumbTips < 0.18 &&
     distIndexTips < 0.20 &&
@@ -172,14 +149,13 @@ export function classifyTwoHandsGesture(hand1Lm, hand2Lm) {
   ) {
     return {
       gesture: 'CINTA',
-      label: 'Cinta / Lambang Hati',
+      label: 'Cinta / Hati',
       confidence: 0.96,
-      category: 'Dua Tangan (BISINDO)',
-      description: 'Kedua tangan menyatu membentuk lambang hati cinta'
+      category: 'BISINDO (2 Tangan)',
+      description: 'Kedua tangan membentuk simbol hati'
     };
   }
 
-  // 3. SAMA-SAMA (Kedua telapak menangkup di depan dada)
   if (
     distWrists < 0.35 &&
     distMiddleTips < 0.25 &&
@@ -188,14 +164,13 @@ export function classifyTwoHandsGesture(hand1Lm, hand2Lm) {
   ) {
     return {
       gesture: 'SAMA-SAMA',
-      label: 'Sama-Sama / Santun',
+      label: 'Sama-Sama',
       confidence: 0.95,
-      category: 'Dua Tangan (BISINDO)',
+      category: 'BISINDO (2 Tangan)',
       description: 'Kedua telapak tangan menangkup di depan dada'
     };
   }
 
-  // 4. TERIMA KASIH (Dua Tangan BISINDO)
   if (
     h1.counts.extendedCount >= 3 &&
     h2.counts.extendedCount >= 3 &&
@@ -204,33 +179,29 @@ export function classifyTwoHandsGesture(hand1Lm, hand2Lm) {
   ) {
     return {
       gesture: 'TERIMA KASIH',
-      label: 'Terima Kasih (Dua Tangan)',
+      label: 'Terima Kasih',
       confidence: 0.94,
-      category: 'Dua Tangan (BISINDO)',
-      description: 'Kedua telapak tangan terbuka datar menyapu ke depan'
+      category: 'BISINDO (2 Tangan)',
+      description: 'Kedua telapak tangan terbuka menyapu ke depan'
     };
   }
 
-  // 5. HALO / SELAMAT DATANG (Dua Tangan)
   if (
     h1.counts.extendedCount === 4 && h1.thumb.isOutward &&
     h2.counts.extendedCount === 4 && h2.thumb.isOutward
   ) {
     return {
       gesture: 'HALO',
-      label: 'Halo / Selamat Datang',
+      label: 'Halo',
       confidence: 0.95,
-      category: 'Dua Tangan (BISINDO)',
-      description: 'Kedua telapak tangan terbuka menyapa lawan bicara'
+      category: 'BISINDO (2 Tangan)',
+      description: 'Kedua telapak tangan terbuka menyapa'
     };
   }
 
   return null;
 }
 
-/**
- * Klasifikasi Gestur SATU TANGAN (SIBI & Alfabet)
- */
 export function classifySingleHandGesture(landmarks) {
   const analysis = analyzeHand(landmarks);
   if (!analysis) {
@@ -240,7 +211,6 @@ export function classifySingleHandGesture(landmarks) {
   const { index, middle, ring, pinky, thumb, counts, distances, palmHeight, palmWidth, lm } = analysis;
   const { extendedCount, curledCount } = counts;
 
-  // 1. MANTAP (Satu Jempol)
   if (
     curledCount >= 3 &&
     extendedCount === 0 &&
@@ -249,14 +219,13 @@ export function classifySingleHandGesture(landmarks) {
   ) {
     return {
       gesture: 'MANTAP',
-      label: 'Mantap / Jempol',
+      label: 'Mantap',
       confidence: 0.95,
       category: 'Ekspresi',
-      description: 'Ibu jari mengacung tegak ke atas'
+      description: 'Ibu jari mengacung ke atas'
     };
   }
 
-  // 2. HALO (Satu Tangan)
   if (
     extendedCount === 4 &&
     thumb.isOutward &&
@@ -265,14 +234,13 @@ export function classifySingleHandGesture(landmarks) {
   ) {
     return {
       gesture: 'HALO',
-      label: 'Halo / Hai',
+      label: 'Halo',
       confidence: 0.94,
-      category: 'Kata',
-      description: 'Seluruh lima jari terbuka lebar menghadap kamera'
+      category: 'Sapaan',
+      description: 'Lima jari terbuka ke arah kamera'
     };
   }
 
-  // 3. I LOVE YOU (ILY Sign)
   if (
     index.isExtended &&
     pinky.isExtended &&
@@ -282,14 +250,13 @@ export function classifySingleHandGesture(landmarks) {
   ) {
     return {
       gesture: 'I LOVE YOU',
-      label: 'I Love You (Sayang)',
+      label: 'I Love You',
       confidence: 0.95,
       category: 'Ekspresi',
-      description: 'Jempol, telunjuk, dan kelingking terbuka (Simbol ILY)'
+      description: 'Jempol, telunjuk, dan kelingking terbuka'
     };
   }
 
-  // 4. HURUF V
   if (
     index.isExtended &&
     middle.isExtended &&
@@ -302,11 +269,10 @@ export function classifySingleHandGesture(landmarks) {
       label: 'Huruf V',
       confidence: 0.94,
       category: 'Alfabet',
-      description: 'Telunjuk dan jari tengah tegak memisah membentuk huruf V'
+      description: 'Telunjuk dan jari tengah membentuk huruf V'
     };
   }
 
-  // 5. HURUF L
   if (
     index.isExtended &&
     thumb.isOutward &&
@@ -319,11 +285,10 @@ export function classifySingleHandGesture(landmarks) {
       label: 'Huruf L',
       confidence: 0.93,
       category: 'Alfabet',
-      description: 'Telunjuk tegak ke atas dan ibu jari menyiku 90° (Huruf L)'
+      description: 'Telunjuk dan ibu jari menyiku 90°'
     };
   }
 
-  // 6. HURUF B
   if (
     extendedCount === 4 &&
     distances.distIndexMiddle < palmWidth * 0.35 &&
@@ -335,11 +300,10 @@ export function classifySingleHandGesture(landmarks) {
       label: 'Huruf B',
       confidence: 0.92,
       category: 'Alfabet',
-      description: 'Empat jari tegak lurus rapat ke atas, jempol melipat di telapak'
+      description: 'Empat jari lurus rapat ke atas'
     };
   }
 
-  // 7. HURUF Y (Shaka)
   if (
     pinky.isExtended &&
     thumb.isOutward &&
@@ -352,11 +316,10 @@ export function classifySingleHandGesture(landmarks) {
       label: 'Huruf Y',
       confidence: 0.93,
       category: 'Alfabet',
-      description: 'Ibu jari dan kelingking terentang keluar (Huruf Y)'
+      description: 'Ibu jari dan kelingking terentang keluar'
     };
   }
 
-  // 8. HURUF I
   if (
     pinky.isExtended &&
     index.isCurled &&
@@ -369,11 +332,10 @@ export function classifySingleHandGesture(landmarks) {
       label: 'Huruf I',
       confidence: 0.91,
       category: 'Alfabet',
-      description: 'Hanya jari kelingking tegak lurus ke atas'
+      description: 'Jari kelingking tegak ke atas'
     };
   }
 
-  // 9. KATA OKE
   if (
     middle.isExtended &&
     ring.isExtended &&
@@ -382,14 +344,13 @@ export function classifySingleHandGesture(landmarks) {
   ) {
     return {
       gesture: 'OKE',
-      label: 'Oke / Sempurna',
+      label: 'Oke',
       confidence: 0.92,
       category: 'Ekspresi',
-      description: 'Ujung jempol dan telunjuk bertaut lingkaran, 3 jari lain tegak'
+      description: 'Ujung jempol dan telunjuk bersentuhan lingkaran'
     };
   }
 
-  // 10. HURUF O
   if (
     distances.distThumbIndex < palmHeight * 0.28 &&
     distances.distThumbPinky < palmHeight * 0.45 &&
@@ -400,11 +361,10 @@ export function classifySingleHandGesture(landmarks) {
       label: 'Huruf O',
       confidence: 0.88,
       category: 'Alfabet',
-      description: 'Ujung semua jari melengkung bertemu ibu jari'
+      description: 'Ujung jari melengkung bertemu ibu jari'
     };
   }
 
-  // 11. HURUF C
   if (
     distances.distThumbIndex > palmHeight * 0.28 &&
     distances.distThumbIndex < palmHeight * 0.65 &&
@@ -416,11 +376,10 @@ export function classifySingleHandGesture(landmarks) {
       label: 'Huruf C',
       confidence: 0.85,
       category: 'Alfabet',
-      description: 'Jari melengkung membentuk siluet huruf C'
+      description: 'Jari melengkung membentuk siluet C'
     };
   }
 
-  // 12. HURUF A
   if (
     curledCount >= 3 &&
     extendedCount === 0 &&
@@ -432,7 +391,7 @@ export function classifySingleHandGesture(landmarks) {
       label: 'Huruf A',
       confidence: 0.89,
       category: 'Alfabet',
-      description: 'Kepalan tangan rapat, ibu jari tegak di samping jari telunjuk'
+      description: 'Kepalan tangan dengan jempol di sisi telunjuk'
     };
   }
 
@@ -445,15 +404,11 @@ export function classifySingleHandGesture(landmarks) {
   };
 }
 
-/**
- * Entry Point Utama: Otomatis mendeteksi 1 atau 2 Tangan!
- */
 export function classifyMultiHands(multiHandLandmarks) {
   if (!multiHandLandmarks || multiHandLandmarks.length === 0) {
     return { gesture: null, confidence: 0, label: 'Tangan tidak terdeteksi' };
   }
 
-  // Jika terdeteksi 2 tangan, prioritaskan isyarat dua tangan (BISINDO)
   if (multiHandLandmarks.length >= 2) {
     const twoHandResult = classifyTwoHandsGesture(multiHandLandmarks[0], multiHandLandmarks[1]);
     if (twoHandResult) {
@@ -461,13 +416,9 @@ export function classifyMultiHands(multiHandLandmarks) {
     }
   }
 
-  // Fallback: deteksi tangan pertama yang terdeteksi
   return classifySingleHandGesture(multiHandLandmarks[0]);
 }
 
-/**
- * Filter Stabilizer Anti-Flicker
- */
 export class GestureStabilizer {
   constructor(requiredHoldFrames = 30, confidenceThreshold = 0.85) {
     this.requiredHoldFrames = requiredHoldFrames;

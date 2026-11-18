@@ -11,12 +11,11 @@ import {
   Info, 
   HandMetal, 
   Download,
-  CheckCircle2,
-  Users
+  CheckCircle2
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('detection'); // 'detection' | 'dictionary' | 'history' | 'about'
+  const [activeTab, setActiveTab] = useState('detection');
   const { isInstalled, triggerInstall } = usePwaInstall();
 
   const navItems = [
@@ -27,29 +26,26 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
-      {/* Top Professional Navigation Bar */}
-      <header className="h-16 w-full bg-[#111827]/95 border-b border-slate-800 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40">
-        {/* Brand Logo & Name */}
+    <div className="min-h-screen w-full bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
+      <header className="h-16 w-full bg-[#121215] border-b border-zinc-800/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-teal-500 flex items-center justify-center text-white shadow-md">
-            <HandMetal className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white">
+            <HandMetal className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-base tracking-tight text-white">ISYARATKU</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="font-bold text-sm tracking-tight text-white">ISYARATKU</span>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
                 1 & 2 Tangan
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 hidden sm:block">
-              Penerjemah Bahasa Isyarat SIBI & BISINDO (100% Client-Side AI)
+            <p className="text-[11px] text-zinc-400 hidden sm:block">
+              Penerjemah Bahasa Isyarat SIBI & BISINDO
             </p>
           </div>
         </div>
 
-        {/* Desktop Navigation Tabs */}
-        <nav className="hidden md:flex items-center gap-1 bg-[#0b0f19] p-1 rounded-xl border border-slate-800">
+        <nav className="hidden md:flex items-center gap-1 bg-[#18181b] p-1 rounded-xl border border-zinc-800">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -57,40 +53,37 @@ export default function App() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition ${
                   isActive
-                    ? 'bg-slate-800 text-white shadow-sm border border-slate-700/60'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                    ? 'bg-zinc-900 text-white shadow-sm border border-zinc-700'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* Tombol Install Aplikasi di Navbar */}
         <div className="flex items-center gap-3">
           {isInstalled ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-xs font-semibold shadow-sm">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>Aplikasi Sudah Diinstall</span>
             </div>
           ) : (
             <button
               onClick={triggerInstall}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-xs font-bold transition shadow-sm active:scale-95"
-              title="Pasang aplikasi Isyaratku ke HP / Desktop"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition active:scale-95 shadow-sm"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-3.5 h-3.5" />
               <span>Install Aplikasi</span>
             </button>
           )}
         </div>
       </header>
 
-      {/* Main App Content Area */}
       <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-6 flex flex-col overflow-hidden">
         {activeTab === 'detection' && (
           <DetectionView
@@ -116,8 +109,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden w-full bg-[#111827]/95 backdrop-blur-xl border-t border-slate-800 px-2 py-2 flex items-center justify-around sticky bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
+      <nav className="md:hidden w-full bg-[#121215] border-t border-zinc-800 px-2 py-2 flex items-center justify-around sticky bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -125,12 +117,12 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition ${
-                isActive ? 'text-teal-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg transition ${
+                isActive ? 'text-emerald-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              <Icon className="w-5 h-5 mb-0.5" />
-              <span className="text-[10px] tracking-tight">{item.label}</span>
+              <Icon className="w-4 h-4 mb-0.5" />
+              <span className="text-[10px]">{item.label}</span>
             </button>
           );
         })}

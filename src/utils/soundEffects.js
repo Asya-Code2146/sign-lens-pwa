@@ -1,11 +1,3 @@
-/**
- * ============================================================================
- * EFEK SUARA NATIVE VIA WEB AUDIO API
- * ============================================================================
- * Menghasilkan efek suara interaktif langsung tanpa memerlukan file audio MP3/WAV.
- * 100% offline & instan.
- */
-
 class SoundFX {
   constructor() {
     this.ctx = null;
@@ -20,7 +12,6 @@ class SoundFX {
     }
   }
 
-  // Nada lembut saat huruf/gestur baru terkunci
   playPop() {
     try {
       this.init();
@@ -31,8 +22,8 @@ class SoundFX {
       const gain = this.ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, this.ctx.currentTime); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08); // A5
+      osc.frequency.setValueAtTime(587.33, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
 
       gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
@@ -42,12 +33,9 @@ class SoundFX {
 
       osc.start();
       osc.stop(this.ctx.currentTime + 0.08);
-    } catch (e) {
-      // Abaikan jika browser memblokir audio sebelum interaksi user
-    }
+    } catch (e) {}
   }
 
-  // Nada sukacita saat berhasil menyimpan riwayat
   playSuccess() {
     try {
       this.init();
@@ -70,12 +58,9 @@ class SoundFX {
         osc.start(now + i * 0.06);
         osc.stop(now + i * 0.06 + 0.18);
       });
-    } catch (e) {
-      // Abaikan
-    }
+    } catch (e) {}
   }
 
-  // Nada klik/hapus
   playTap() {
     try {
       this.init();
@@ -97,9 +82,7 @@ class SoundFX {
 
       osc.start();
       osc.stop(this.ctx.currentTime + 0.04);
-    } catch (e) {
-      // Abaikan
-    }
+    } catch (e) {}
   }
 }
 

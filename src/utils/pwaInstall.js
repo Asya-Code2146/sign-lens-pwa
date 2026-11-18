@@ -1,7 +1,3 @@
-/**
- * PWA Install Manager & State Handler
- */
-
 import { useState, useEffect } from 'react';
 
 export function usePwaInstall() {
@@ -9,7 +5,6 @@ export function usePwaInstall() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // 1. Cek apakah sudah berjalan dalam mode standalone (terpasang di HP/Desktop)
     const isStandalone = 
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true ||
@@ -19,17 +14,14 @@ export function usePwaInstall() {
       setIsInstalled(true);
     }
 
-    // 2. Tangkap event beforeinstallprompt
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Jika event ini muncul, berarti aplikasi belum terpasang
       if (!isStandalone) {
         setIsInstalled(false);
       }
     };
 
-    // 3. Tangkap event saat aplikasi selesai di-install
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
@@ -47,7 +39,6 @@ export function usePwaInstall() {
 
   const triggerInstall = async () => {
     if (!deferredPrompt) {
-      // Jika browser tidak mendukung prompt atau sudah diinstall
       if (isInstalled) return;
       alert('Untuk memasang aplikasi ini, silakan klik ikon pasang di bilah alamat browser (URL bar) atau pilih menu browser > "Tambahkan ke Layar Utama / Install".');
       return;
