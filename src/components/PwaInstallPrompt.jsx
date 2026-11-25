@@ -57,22 +57,22 @@ export default function PwaInstallPrompt() {
   return (
     <>
       {isOffline && (
-        <div className="bg-zinc-800 text-zinc-300 text-[11px] font-medium py-1 px-3 text-center flex items-center justify-center gap-1.5 border-b border-zinc-700 z-50">
+        <div className="bg-stone-800 text-stone-200 text-xs font-medium py-1 px-3 text-center flex items-center justify-center gap-1.5 z-50">
           <WifiOff className="w-3.5 h-3.5" />
           <span>Mode Offline Aktif</span>
         </div>
       )}
 
       {showPrompt && !isInstalled && (
-        <div className="absolute top-3 inset-x-3 z-50 max-w-sm mx-auto bg-[#18181b] border border-zinc-700 rounded-xl p-3 shadow-lg flex items-center justify-between gap-3">
+        <div className="fixed top-4 inset-x-4 z-50 max-w-sm mx-auto bg-white border border-[#ede8e1] rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3 animate-in slide-in-from-top-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-200 flex-shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-orange-100 text-[#c84b1a] flex items-center justify-center flex-shrink-0">
               <Download className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs font-semibold text-white truncate">Pasang Isyaratku</h4>
-              <p className="text-[10px] text-zinc-400 truncate">
-                Install di layar utama untuk akses instan
+              <h4 className="text-xs font-bold text-stone-900 truncate">Pasang Isyarat</h4>
+              <p className="text-[11px] text-stone-500 truncate">
+                Install di layar beranda untuk akses instan
               </p>
             </div>
           </div>
@@ -80,13 +80,13 @@ export default function PwaInstallPrompt() {
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
               onClick={handleInstallClick}
-              className="px-3 py-1 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-lg shadow-sm transition"
+              className="px-3.5 py-1.5 bg-[#c84b1a] hover:bg-[#b53f12] text-white text-xs font-bold rounded-full shadow-sm transition"
             >
               Install
             </button>
             <button
               onClick={handleDismiss}
-              className="p-1 text-zinc-400 hover:text-white rounded-lg"
+              className="p-1 text-stone-400 hover:text-stone-700 rounded-lg"
             >
               <X className="w-3.5 h-3.5" />
             </button>

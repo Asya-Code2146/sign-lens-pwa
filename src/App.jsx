@@ -5,88 +5,107 @@ import HistoryView from './components/HistoryView';
 import AboutView from './components/AboutView';
 import { usePwaInstall } from './utils/pwaInstall';
 import { 
-  Video, 
+  Camera, 
   BookOpen, 
-  History, 
-  Info, 
-  HandMetal, 
+  Clock, 
+  Sliders, 
   Download,
   CheckCircle2
 } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('detection');
+  const [signSystem, setSignSystem] = useState('SIBI');
   const { isInstalled, triggerInstall } = usePwaInstall();
 
-  const navItems = [
-    { id: 'detection', label: 'Kamera Deteksi', icon: Video },
-    { id: 'dictionary', label: 'Kamus Isyarat', icon: BookOpen },
-    { id: 'history', label: 'Riwayat Terjemahan', icon: History },
-    { id: 'about', label: 'Panduan & Info', icon: Info },
-  ];
-
   return (
-    <div className="min-h-screen w-full bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
-      <header className="h-16 w-full bg-[#121215] border-b border-zinc-800/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white">
-            <HandMetal className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm tracking-tight text-white">ISYARATKU</span>
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-                1 & 2 Tangan
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-400 hidden sm:block">
-              Penerjemah Bahasa Isyarat SIBI & BISINDO
-            </p>
-          </div>
+    <div className="min-h-screen w-full bg-[#fbf9f5] text-stone-900 flex flex-col font-sans selection:bg-orange-100 selection:text-orange-950">
+      <header className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-4 sm:py-6 flex items-center justify-between">
+        <div 
+          onClick={() => setActiveTab('detection')}
+          className="flex items-center gap-2 cursor-pointer select-none"
+        >
+          <span className="font-extrabold text-2xl tracking-tight text-stone-900">
+            Isyarat
+          </span>
         </div>
 
-        <nav className="hidden md:flex items-center gap-1 bg-[#18181b] p-1 rounded-xl border border-zinc-800">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition ${
-                  isActive
-                    ? 'bg-zinc-900 text-white shadow-sm border border-zinc-700'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-400' : 'text-zinc-400'}`} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+        <div className="hidden sm:flex items-center gap-2">
+          <div className="bg-[#ede8e1]/60 p-1 rounded-full flex items-center gap-1 border border-[#e5dfd7]">
+            <button
+              onClick={() => setSignSystem('SIBI')}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition ${
+                signSystem === 'SIBI'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
+            >
+              SIBI
+            </button>
+            <button
+              onClick={() => setSignSystem('BISINDO')}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition ${
+                signSystem === 'BISINDO'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
+            >
+              BISINDO
+            </button>
+          </div>
 
-        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveTab('dictionary')}
+            className={`px-4 py-2 rounded-full text-xs font-semibold border transition ${
+              activeTab === 'dictionary'
+                ? 'bg-stone-900 text-white border-stone-900'
+                : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
+            }`}
+          >
+            Kamus
+          </button>
+
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`px-4 py-2 rounded-full text-xs font-semibold border transition ${
+              activeTab === 'history'
+                ? 'bg-stone-900 text-white border-stone-900'
+                : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
+            }`}
+          >
+            Riwayat
+          </button>
+
           {isInstalled ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Aplikasi Sudah Diinstall</span>
+            <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Terpasang</span>
             </div>
           ) : (
             <button
               onClick={triggerInstall}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition active:scale-95 shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#c84b1a] hover:bg-[#b53f12] text-white text-xs font-semibold transition shadow-sm active:scale-95"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Install Aplikasi</span>
+              <span>Install</span>
             </button>
           )}
         </div>
+
+        <div className="flex sm:hidden items-center gap-2">
+          <button
+            onClick={() => setSignSystem(prev => prev === 'SIBI' ? 'BISINDO' : 'SIBI')}
+            className="px-3 py-1 rounded-full bg-white border border-stone-300 text-xs font-bold text-stone-800 shadow-sm"
+          >
+            {signSystem}
+          </button>
+        </div>
       </header>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-6 flex flex-col overflow-hidden">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-8 pb-20 sm:pb-8 flex flex-col">
         {activeTab === 'detection' && (
           <DetectionView
+            signSystem={signSystem}
             onNavigateToHistory={() => setActiveTab('history')}
             onNavigateToDictionary={() => setActiveTab('dictionary')}
           />
@@ -94,6 +113,7 @@ export default function App() {
 
         {activeTab === 'dictionary' && (
           <DictionaryView
+            signSystem={signSystem}
             onSwitchToCamera={() => setActiveTab('detection')}
           />
         )}
@@ -109,23 +129,46 @@ export default function App() {
         )}
       </main>
 
-      <nav className="md:hidden w-full bg-[#121215] border-t border-zinc-800 px-2 py-2 flex items-center justify-around sticky bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg transition ${
-                isActive ? 'text-emerald-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <Icon className="w-4 h-4 mb-0.5" />
-              <span className="text-[10px]">{item.label}</span>
-            </button>
-          );
-        })}
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-stone-200/80 px-4 py-2 flex items-center justify-around z-40 pb-[calc(0.6rem+env(safe-area-inset-bottom,0px))]">
+        <button
+          onClick={() => setActiveTab('detection')}
+          className={`flex flex-col items-center justify-center py-1 px-3 transition ${
+            activeTab === 'detection' ? 'text-[#c84b1a] font-bold' : 'text-stone-400'
+          }`}
+        >
+          <Camera className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Terjemah</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('dictionary')}
+          className={`flex flex-col items-center justify-center py-1 px-3 transition ${
+            activeTab === 'dictionary' ? 'text-[#c84b1a] font-bold' : 'text-stone-400'
+          }`}
+        >
+          <BookOpen className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Kamus</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex flex-col items-center justify-center py-1 px-3 transition ${
+            activeTab === 'history' ? 'text-[#c84b1a] font-bold' : 'text-stone-400'
+          }`}
+        >
+          <Clock className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Riwayat</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('about')}
+          className={`flex flex-col items-center justify-center py-1 px-3 transition ${
+            activeTab === 'about' ? 'text-[#c84b1a] font-bold' : 'text-stone-400'
+          }`}
+        >
+          <Sliders className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Atur</span>
+        </button>
       </nav>
     </div>
   );

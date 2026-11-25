@@ -1,83 +1,76 @@
 import React from 'react';
 import { 
-  Cpu, 
-  Users, 
   WifiOff, 
-  Layers, 
-  CheckCircle2,
-  BookOpen
+  Scan, 
+  BookOpen, 
+  Download, 
+  CheckCircle2
 } from 'lucide-react';
+import { usePwaInstall } from '../utils/pwaInstall';
 
 export default function AboutView() {
+  const { isInstalled, triggerInstall } = usePwaInstall();
+
   return (
-    <div className="w-full flex-1 flex flex-col gap-4 overflow-y-auto pb-20 pr-1">
-      <div className="bg-[#121215] border border-zinc-800/80 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-base font-bold text-white tracking-tight">Isyaratku PWA</h2>
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-              1 & 2 Tangan
-            </span>
-          </div>
-          <p className="text-xs text-zinc-400 max-w-xl leading-relaxed">
-            Aplikasi web penerjemah bahasa isyarat SIBI dan BISINDO berbasis Computer Vision 100% Client-Side.
-          </p>
+    <div className="w-full flex-1 flex flex-col gap-6 max-w-4xl mx-auto pb-16">
+      <div className="text-center sm:text-left py-4 sm:py-8 flex flex-col gap-3">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-[#c84b1a] text-xs font-bold w-fit mx-auto sm:mx-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#c84b1a]" />
+          <span>Berjalan di browser, tanpa internet</span>
+        </div>
+        <h1 className="text-3xl sm:text-5xl font-black text-stone-900 tracking-tight leading-tight">
+          Setiap isyarat<br />layak didengar.
+        </h1>
+        <p className="text-sm sm:text-base text-stone-600 max-w-xl leading-relaxed">
+          Arahkan kamera ke tanganmu, dan gerakan SIBI atau BISINDO langsung berubah jadi teks dan suara. Semua berjalan di perangkatmu, tanpa akun dan tanpa API key.
+        </p>
+
+        <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3">
+          {isInstalled ? (
+            <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Aplikasi Sudah Diinstall</span>
+            </div>
+          ) : (
+            <button
+              onClick={triggerInstall}
+              className="px-6 py-2.5 rounded-full bg-[#c84b1a] hover:bg-[#b53f12] text-white text-xs font-bold shadow-sm transition active:scale-95 flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Install Aplikasi ke Perangkat</span>
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="bg-[#121215] border border-zinc-800/80 rounded-2xl p-4 shadow-sm space-y-3">
-        <h3 className="text-xs font-semibold text-white flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-emerald-400" />
-          <span>Standar Bahasa Isyarat SIBI & BISINDO</span>
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-          <div className="p-3 rounded-xl bg-[#18181b] border border-zinc-800">
-            <div className="flex items-center gap-1.5 mb-1 text-emerald-400 font-semibold text-xs">
-              <Users className="w-3.5 h-3.5" />
-              <span>BISINDO (Bahasa Isyarat Indonesia)</span>
-            </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Bahasa isyarat alami komunitas Tuli yang banyak memanfaatkan kedua tangan untuk kata sapaan, respon, dan ekspresi.
-            </p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white border border-[#ede8e1] rounded-[24px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-orange-50 text-[#c84b1a] flex items-center justify-center">
+            <WifiOff className="w-5 h-5" />
           </div>
-
-          <div className="p-3 rounded-xl bg-[#18181b] border border-zinc-800">
-            <div className="flex items-center gap-1.5 mb-1 text-zinc-200 font-semibold text-xs">
-              <Layers className="w-3.5 h-3.5" />
-              <span>SIBI (Sistem Isyarat Bahasa Indonesia)</span>
-            </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Sistem isyarat formal berbasis tata bahasa yang dominan memakai satu tangan untuk alfabet daktilologi.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="p-3.5 rounded-xl bg-[#121215] border border-zinc-800/80 flex flex-col gap-1">
-          <div className="flex items-center gap-1.5 text-zinc-200 font-medium text-xs">
-            <Cpu className="w-3.5 h-3.5 text-emerald-400" /> 100% Client-Side AI
-          </div>
-          <p className="text-[11px] text-zinc-400 leading-relaxed">
-            MediaPipe Hands memproses koordinat langsung di peramban tanpa koneksi server eksternal.
+          <h3 className="font-extrabold text-stone-900 text-base">100% offline</h3>
+          <p className="text-xs text-stone-600 leading-relaxed">
+            Model berjalan di perangkatmu. Tidak ada video yang dikirim ke server dan tidak perlu API key.
           </p>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-[#121215] border border-zinc-800/80 flex flex-col gap-1">
-          <div className="flex items-center gap-1.5 text-zinc-200 font-medium text-xs">
-            <WifiOff className="w-3.5 h-3.5 text-emerald-400" /> Dukungan Mode Offline
+        <div className="bg-white border border-[#ede8e1] rounded-[24px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-orange-50 text-[#c84b1a] flex items-center justify-center">
+            <Scan className="w-5 h-5" />
           </div>
-          <p className="text-[11px] text-zinc-400 leading-relaxed">
-            Service Worker mencadangkan aset sehingga aplikasi tetap dapat dibuka saat offline.
+          <h3 className="font-extrabold text-stone-900 text-base">Computer vision real-time</h3>
+          <p className="text-xs text-stone-600 leading-relaxed">
+            21 titik sendi tangan dibaca langsung dari kamera dan diterjemahkan saat kamu bergerak.
           </p>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-[#121215] border border-zinc-800/80 flex flex-col gap-1">
-          <div className="flex items-center gap-1.5 text-zinc-200 font-medium text-xs">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> PWA Installable
+        <div className="bg-white border border-[#ede8e1] rounded-[24px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-orange-50 text-[#c84b1a] flex items-center justify-center">
+            <BookOpen className="w-5 h-5" />
           </div>
-          <p className="text-[11px] text-zinc-400 leading-relaxed">
-            Dapat dipasang ke layar beranda HP atau desktop melalui tombol di bilah navigasi.
+          <h3 className="font-extrabold text-stone-900 text-base">Kamus SIBI dan BISINDO</h3>
+          <p className="text-xs text-stone-600 leading-relaxed">
+            Pelajari setiap isyarat lewat kamus, lalu ganti sistem isyarat kapan saja.
           </p>
         </div>
       </div>

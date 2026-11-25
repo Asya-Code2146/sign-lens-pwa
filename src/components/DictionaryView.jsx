@@ -12,13 +12,13 @@ import {
 import { fetchDictionaryData } from '../utils/storage';
 import fallbackKamusData from '../../data/kamus.json';
 
-export default function DictionaryView({ onSwitchToCamera }) {
+export default function DictionaryView({ signSystem, onSwitchToCamera }) {
   const [kamusList, setKamusList] = useState(fallbackKamusData);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [activeItemModal, setActiveItemModal] = useState(null);
 
-  const categories = ['Semua', 'Alfabet', 'Kata & Sapaan', 'Respon & Ekspresi'];
+  const categories = ['Semua', 'Alfabet', 'Kata & Sapaan', 'Aktivitas & Sehari-hari', 'Respon & Ekspresi'];
 
   useEffect(() => {
     let isMounted = true;
@@ -46,90 +46,89 @@ export default function DictionaryView({ onSwitchToCamera }) {
   });
 
   return (
-    <div className="w-full flex-1 flex flex-col gap-4 overflow-hidden">
-      <div className="bg-[#121215] border border-zinc-800/80 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="w-full flex-1 flex flex-col gap-5">
+      <div className="bg-white border border-[#ede8e1] rounded-[24px] sm:rounded-[28px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-emerald-400" />
-            <span>Kamus Bahasa Isyarat SIBI & BISINDO</span>
+          <h2 className="text-xl font-extrabold text-stone-900 tracking-tight flex items-center gap-2">
+            <span>Kamus Bahasa Isyarat</span>
           </h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Daftar kosakata isyarat 1 tangan dan 2 tangan
+          <p className="text-xs text-stone-500 mt-1">
+            Pelajari setiap gerakan isyarat standar SIBI dan BISINDO
           </p>
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Cari huruf atau kata..."
+            placeholder="Cari isyarat, huruf, atau kata..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#18181b] border border-zinc-800 rounded-lg pl-8 pr-8 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition"
+            className="w-full bg-[#fbf9f5] border border-[#e5dfd7] rounded-full pl-9 pr-8 py-2 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#c84b1a] transition"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
             >
-              <X className="w-3 h-3" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
               selectedCategory === cat
-                ? 'bg-zinc-800 text-white border border-zinc-700 shadow-sm'
-                : 'bg-[#121215] text-zinc-400 border border-zinc-800/80 hover:text-zinc-200'
+                ? 'bg-[#c84b1a] text-white shadow-sm'
+                : 'bg-white text-stone-600 border border-[#e5dfd7] hover:bg-stone-50'
             }`}
           >
             {cat}
           </button>
         ))}
-        <span className="text-[11px] text-zinc-500 ml-auto hidden sm:inline">
+        <span className="text-xs text-stone-400 ml-auto hidden sm:inline">
           {filteredList.length} Isyarat
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-20 pr-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
         {filteredList.map((item) => (
           <div
             key={item.id}
             onClick={() => setActiveItemModal(item)}
-            className="bg-[#121215] hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-3.5 transition shadow-sm cursor-pointer flex flex-col justify-between gap-2.5 group active:scale-[0.99]"
+            className="bg-white hover:border-[#c84b1a]/40 border border-[#ede8e1] rounded-[22px] p-5 transition shadow-[0_4px_16px_rgba(0,0,0,0.02)] cursor-pointer flex flex-col justify-between gap-4 group active:scale-[0.99]"
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#18181b] border border-zinc-800 flex items-center justify-center text-xs font-mono font-bold text-white flex-shrink-0 group-hover:border-zinc-700 transition">
-                {item.kode.length <= 2 ? item.kode : <HandMetal className="w-4 h-4 text-emerald-400" />}
+              <div className="w-12 h-12 rounded-2xl bg-[#fbf9f5] border border-[#ede8e1] flex items-center justify-center text-lg font-black text-[#c84b1a] flex-shrink-0 group-hover:bg-orange-50 transition">
+                {item.kode.length <= 2 ? item.kode : (item.icon || <HandMetal className="w-5 h-5 text-[#c84b1a]" />)}
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs font-semibold text-white truncate group-hover:text-emerald-400 transition">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-stone-900 truncate group-hover:text-[#c84b1a] transition">
                     {item.label}
                   </h3>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
-                    {item.standar || item.kategori}
-                  </span>
                 </div>
-                <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
+                <span className="inline-block text-[10px] font-semibold text-stone-400 mt-0.5">
+                  {item.standar || item.kategori}
+                </span>
+                <p className="text-xs text-stone-600 mt-1 line-clamp-2 leading-relaxed">
                   {item.gerakan}
                 </p>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-zinc-800/60 flex items-center justify-between text-[11px]">
-              <span className="text-emerald-400 font-medium flex items-center gap-1 text-[10px]">
-                <CheckCircle2 className="w-3 h-3" /> Kamera Real-time
+            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
+              <span className="text-emerald-700 font-semibold flex items-center gap-1 text-[11px]">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Didukung AI
               </span>
-              <span className="text-zinc-400 group-hover:text-white flex items-center gap-1 transition text-[10px]">
-                Lihat Panduan <ArrowRight className="w-2.5 h-2.5" />
+              <span className="text-stone-500 group-hover:text-stone-900 font-semibold flex items-center gap-1 transition text-[11px]">
+                Panduan <ArrowRight className="w-3 h-3" />
               </span>
             </div>
           </div>
@@ -137,41 +136,41 @@ export default function DictionaryView({ onSwitchToCamera }) {
       </div>
 
       {activeItemModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121215] border border-zinc-800 w-full max-w-lg rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
-            <div className="flex items-start justify-between pb-3 border-b border-zinc-800">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-[#ede8e1] w-full max-w-lg rounded-[28px] p-6 shadow-2xl flex flex-col gap-5">
+            <div className="flex items-start justify-between pb-3 border-b border-stone-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#18181b] border border-zinc-800 flex items-center justify-center text-sm font-mono font-bold text-emerald-400">
-                  {activeItemModal.kode.length <= 2 ? activeItemModal.kode : <HandMetal className="w-5 h-5" />}
+                <div className="w-14 h-14 rounded-2xl bg-[#fbf9f5] border border-[#ede8e1] flex items-center justify-center text-2xl font-black text-[#c84b1a]">
+                  {activeItemModal.kode.length <= 2 ? activeItemModal.kode : (activeItemModal.icon || <HandMetal className="w-6 h-6" />)}
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">{activeItemModal.label}</h3>
-                  <span className="text-xs text-zinc-400">{activeItemModal.standar || activeItemModal.kategori}</span>
+                  <h3 className="text-base font-extrabold text-stone-900">{activeItemModal.label}</h3>
+                  <span className="text-xs font-semibold text-stone-400">{activeItemModal.standar || activeItemModal.kategori}</span>
                 </div>
               </div>
               <button
                 onClick={() => setActiveItemModal(null)}
-                className="p-1 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white"
+                className="w-8 h-8 rounded-full bg-stone-100 text-stone-500 hover:text-stone-900 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-2.5 text-xs text-zinc-300">
-              <div className="p-3 rounded-lg bg-[#18181b] border border-zinc-800">
-                <span className="font-semibold text-white block mb-1">Panduan Posisi Jari:</span>
-                <p className="leading-relaxed text-zinc-300 text-[11px]">{activeItemModal.gerakan}</p>
+            <div className="space-y-3 text-xs text-stone-700">
+              <div className="p-3.5 rounded-2xl bg-[#fbf9f5] border border-[#ede8e1]">
+                <span className="font-bold text-stone-900 block mb-1">Panduan Langkah:</span>
+                <p className="leading-relaxed text-stone-700">{activeItemModal.gerakan}</p>
               </div>
 
-              <div className="p-3 rounded-lg bg-[#18181b] border border-zinc-800">
-                <span className="font-semibold text-emerald-400 block mb-1">Logika Sensor AI:</span>
-                <p className="leading-relaxed text-zinc-300 text-[11px]">{activeItemModal.ruleDeskripsi}</p>
+              <div className="p-3.5 rounded-2xl bg-[#fbf9f5] border border-[#ede8e1]">
+                <span className="font-bold text-[#c84b1a] block mb-1">Logika Sensor AI:</span>
+                <p className="leading-relaxed text-stone-700">{activeItemModal.ruleDeskripsi}</p>
               </div>
 
               {activeItemModal.tips && (
-                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 flex items-start gap-2">
-                  <Lightbulb className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-zinc-300 leading-relaxed text-[11px]">
+                <div className="p-3 rounded-2xl bg-orange-50 border border-orange-100 flex items-start gap-2">
+                  <Lightbulb className="w-4 h-4 text-[#c84b1a] flex-shrink-0 mt-0.5" />
+                  <p className="text-stone-700 leading-relaxed">
                     <strong>Tips:</strong> {activeItemModal.tips}
                   </p>
                 </div>
@@ -181,7 +180,7 @@ export default function DictionaryView({ onSwitchToCamera }) {
             <div className="pt-2 flex items-center gap-2">
               <button
                 onClick={() => setActiveItemModal(null)}
-                className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium"
+                className="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-full text-xs font-bold"
               >
                 Tutup
               </button>
@@ -190,9 +189,9 @@ export default function DictionaryView({ onSwitchToCamera }) {
                   setActiveItemModal(null);
                   onSwitchToCamera();
                 }}
-                className="flex-1 py-2 bg-white hover:bg-zinc-200 text-black rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 bg-[#c84b1a] hover:bg-[#b53f12] text-white rounded-full text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm"
               >
-                <Camera className="w-3.5 h-3.5" /> Coba di Kamera
+                <Camera className="w-3.5 h-3.5" /> Praktikkan di Kamera
               </button>
             </div>
           </div>
